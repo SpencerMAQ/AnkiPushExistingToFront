@@ -2,7 +2,7 @@
 
 """
 This file is part of the Push Existing Vocab add-on for Anki
-Copyright: SpencerMAQ 2016-2017
+Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 2017
 License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
 """
 
@@ -15,6 +15,7 @@ from aqt.utils import showInfo
 # from pprint import pprint
 
 __version__ = '1.0.0'
+# July 2 2017
 
 ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
 ## BY DOING mw.reset()
@@ -57,24 +58,26 @@ class TextEditor(QDialog):
 
 
     def init_ui(self, mw):
-        # showInfo('the fuck')
+        showInfo(str(self))
 
         # QTextEdit 1st arg = parent
         self.vocabulary_text = QTextEdit(mw)
 
 
-        v_layout = QVBoxLayout()
-        h_layout = QHBoxLayout()
+        self.v_layout = QVBoxLayout()
+        self.h_layout = QHBoxLayout()
 
         # buttons lined horizontally
         # to be added later to v_layout
-        h_layout.addWidget(self.clr_btn)
-        h_layout.addWidget(self.resched_btn)
-        h_layout.addWidget(self.show_contents)
+        self.h_layout.addWidget(self.clr_btn)
+        self.h_layout.addWidget(self.resched_btn)
+        self.h_layout.addWidget(self.show_contents)
 
-        v_layout.addWidget(self.vocabulary_text)
+        self.v_layout.addWidget(self.vocabulary_text)
 
-        v_layout.addLayout(h_layout)
+        self.v_layout.addLayout(self.h_layout)
+
+        self.setLayout(self.v_layout)
 
         # signals
         self.vocabulary_text.textChanged.connect(self.value_changed)
