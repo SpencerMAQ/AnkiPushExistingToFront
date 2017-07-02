@@ -65,7 +65,7 @@ class TextEditor(QtGui.QLineEdit):
         v_layout.addLayout(h_layout)
 
         self.vocabulary_text.textChanged.connect(self.value_changed)
-        self.show_contents.clicked.connect()
+        self.show_contents.clicked.connect(self.show_contents_signal)
 
     def value_changed(self):
         self.vocabulary_text.setText(str(self.vocabulary_text.text()))
@@ -76,16 +76,18 @@ class TextEditor(QtGui.QLineEdit):
         for line in self.vocabulary_text.text():
             self.list_of_vocabs.append(line)
 
-    def show_contents(self):
+    def show_contents_signal(self):
         showInfo(str(self.list_of_vocabs))
 
 
 def enter_vocab():
-    # showInfo("hahahaha")
-    mw.text = QtGui.QLineEdit()
-    mw.text.textChanged.connect(value_changed)
-    mw.text.show()
-    # list_of_vocabs = mw.text.text()
+    # # showInfo("hahahaha")
+    # mw.text = QtGui.QLineEdit()
+    # mw.text.textChanged.connect(value_changed)
+    # mw.text.show()
+    # # list_of_vocabs = mw.text.text()
+
+    text_editor = TextEditor()
 
 # def value_changed():
 #     mw.text.setText(str(mw.text.text()))
@@ -112,7 +114,7 @@ mw.form.menuTools.addAction(run_action)
 
 run_action.triggered.connect(enter_vocab)
 
-show_action = QAction('Show Contents', mw)
-mw.form.menuTools.addAction(show_action)
-
-show_action.triggered.connect(show_contents)
+# show_action = QAction('Show Contents', mw)
+# mw.form.menuTools.addAction(show_action)
+#
+# show_action.triggered.connect(show_contents)
