@@ -32,11 +32,9 @@ name_of_deck = ''
 ## will search
 field_to_match = ''
 
-# list_of_vocabs = []  # create an empty set, note: {} is an empty dictionary, set() = empty set
-
-
-class TextEditor():
+class TextEditor(QDialog):
     def __init__(self, mw):
+        super(TextEditor, self).__init__()
 
         if mw:
             self.run_action = QAction("Push Existing Vocab", mw)
@@ -46,27 +44,24 @@ class TextEditor():
 
             mw.form.menuTools.addAction(self.run_action)
 
-            # run_action.triggered.connect(enter_vocab)
-
         self.list_of_vocabs = []
 
-        ###
-        # self.run_action.triggered.connect(self.init_ui)
-        ###
-
-        # self.init_ui()
-
-    def init_ui(self, mw):
-        # super(TextEditor, self).__init__(mw)
-        # mw lol
-
-        # QTextEdit 1st arg = parent
-        self.vocabulary_text = QTextEdit(mw)
         self.clr_btn = QPushButton('Clear')
         self.resched_btn = QPushButton('Reschedule')
 
+        self.resched_btn.clicked.connect(self.reschedule_cards)
+        self.clr_btn.clicked.connect(self.clear_text)
+
         # temp button
         self.show_contents = QPushButton('Show Contents')
+
+
+    def init_ui(self, mw):
+        # showInfo('the fuck')
+
+        # QTextEdit 1st arg = parent
+        self.vocabulary_text = QTextEdit(mw)
+
 
         v_layout = QVBoxLayout()
         h_layout = QHBoxLayout()
@@ -81,10 +76,11 @@ class TextEditor():
 
         v_layout.addLayout(h_layout)
 
+        # signals
         self.vocabulary_text.textChanged.connect(self.value_changed)
         self.show_contents.clicked.connect(self.show_contents_signal)
 
-        # self.show()
+        self.show()
 
     def value_changed(self):
         self.vocabulary_text.setText(str(self.vocabulary_text.toPlainText()))
@@ -98,44 +94,14 @@ class TextEditor():
     def show_contents_signal(self):
         showInfo(str(self.list_of_vocabs))
 
+    def clear_text(self):
+        self.vocabulary_text.clear()
+
+    def reschedule_cards(self):
+        pass
+
 
 mw.texteditor = TextEditor(mw)
 
-# def enter_vocab():
-    # # showInfo("hahahaha")
-    # mw.text = QtGui.QLineEdit()
-    # mw.text.textChanged.connect(value_changed)
-    # mw.text.show()
-    # # list_of_vocabs = mw.text.text()
-
-    # text_editor = TextEditor()
-
-# def value_changed():
-#     mw.text.setText(str(mw.text.text()))
-#     # list_of_vocabs = mw.text.text()
-#
-#     for line in mw.text.text():
-#         list_of_vocabs.append(line)
-
-# def show_contents():
-#     showInfo(str(list_of_vocabs))
-
-
-# for (name_of_field, contents) in deck_note.items():
-#     if name_of_field == field_to_match:
-#         ## change due value to 0
-#         pass
-
 ## I might need to use SQLITE for changing the due value of the said cards
 ## and unsuspend them simultaneously
-
-# run_action = QAction("Push Existing Vocab", mw)
-# run_action.setShortcut(QKeySequence(HOTKEY))
-# mw.form.menuTools.addAction(run_action)
-#
-# run_action.triggered.connect(enter_vocab)
-
-# show_action = QAction('Show Contents', mw)
-# mw.form.menuTools.addAction(show_action)
-#
-# show_action.triggered.connect(show_contents)
