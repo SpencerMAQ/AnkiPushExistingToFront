@@ -14,13 +14,18 @@ from aqt import mw
 ## BY DOING mw.reset()
 
 ## Select the deck you'd want to change
-deck_to_change = ''
-deck_id = mw.col.decks.id(deck_to_change)
-mw.col.decks.select(deck_id)
+name_of_deck = ''
+deck_id = mw.col.decks.id(name_of_deck)
+deck = mw.col.decks.select(deck_id)
+
+deck_note = deck.note()
 
 ## The name of the field where the add-on
 ## will search
 field_to_match = ''
 
+for (name_of_field, contents) in deck_note.items():
+    if name_of_field == field_to_match:
+        ## change due value to 0
 
 
