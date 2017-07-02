@@ -40,7 +40,8 @@ def enter_vocab():
     mw.text.show()
     list_of_vocabs = mw.text.text()
 
-def show_contents()
+def show_contents():
+    showInfo(list_of_vocabs)
 
 
 # for (name_of_field, contents) in deck_note.items():
@@ -56,3 +57,8 @@ run_action.setShortcut(QKeySequence(HOTKEY))
 mw.form.menuTools.addAction(run_action)
 
 run_action.triggered.connect(enter_vocab)
+
+show_action = QAction('Show Contents', mw)
+mw.form.menuTools.addAction(show_action)
+
+show_action.triggered.connect(show_contents)
