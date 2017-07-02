@@ -12,6 +12,7 @@ from anki.hooks import addHook
 from aqt.utils import showInfo
 # from PyQt5 import QtWidgets, QtGui
 from PyQt4 import QtCore, QtGui
+# from pprint import pprint
 
 __version__ = '1.0.0'
 
@@ -36,12 +37,20 @@ list_of_vocabs = []  # create an empty set, note: {} is an empty dictionary, set
 
 def enter_vocab():
     # showInfo("hahahaha")
-    mw.text = text_source = QtGui.QLineEdit()
+    mw.text = QtGui.QLineEdit()
+    mw.text.textChanged.connect(value_changed)
     mw.text.show()
-    list_of_vocabs = mw.text.text()
+    # list_of_vocabs = mw.text.text()
+
+def value_changed():
+    mw.text.setText(str(mw.text.text()))
+    # list_of_vocabs = mw.text.text()
+
+    for line in mw.text.text():
+        list_of_vocabs.append(line)
 
 def show_contents():
-    showInfo(list_of_vocabs)
+    showInfo(str(list_of_vocabs))
 
 
 # for (name_of_field, contents) in deck_note.items():
