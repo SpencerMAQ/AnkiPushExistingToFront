@@ -10,6 +10,8 @@ from aqt.qt import *
 from aqt import mw
 from anki.hooks import addHook
 from aqt.utils import showInfo
+# from PyQt5 import QtWidgets, QtGui
+from PyQt4 import QtCore, QtGui
 
 __version__ = '1.0.0'
 
@@ -20,10 +22,10 @@ HOTKEY = "Ctrl+Shift+P"
 
 ## Select the deck you'd want to change
 name_of_deck = ''
-deck_id = mw.col.decks.id(name_of_deck)
-deck = mw.col.decks.select(deck_id)
-
-deck_note = deck.note()
+# deck_id = mw.col.decks.id(name_of_deck)
+# deck = mw.col.decks.select(deck_id)
+#
+# deck_note = deck.note()
 
 ## The name of the field where the add-on
 ## will search
@@ -33,13 +35,18 @@ list_of_vocabs = []  # create an empty set, note: {} is an empty dictionary, set
 
 
 def enter_vocab():
-    showInfo("hahahaha")
+    # showInfo("hahahaha")
+    mw.text = text_source = QtGui.QLineEdit()
+    mw.text.show()
+    list_of_vocabs = mw.text.text()
+
+def show_contents()
 
 
-for (name_of_field, contents) in deck_note.items():
-    if name_of_field == field_to_match:
-        ## change due value to 0
-        pass
+# for (name_of_field, contents) in deck_note.items():
+#     if name_of_field == field_to_match:
+#         ## change due value to 0
+#         pass
 
 ## I might need to use SQLITE for changing the due value of the said cards
 ## and unsuspend them simultaneously
