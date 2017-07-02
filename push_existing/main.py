@@ -35,6 +35,22 @@ field_to_match = ''
 list_of_vocabs = []  # create an empty set, note: {} is an empty dictionary, set() = empty set
 
 
+class TextEditor(QtGui.QLineEdit):
+    def __init__(self):
+        super(TextEditor, self).__init__()
+
+        self.vocabulary_text = QtGui.QTextEdit(self)
+        self.clr_btn = QtGui.QPushButton('Clear')
+        self.resched_btn = QtGui.QPushButton('Reschedule')
+
+        self.init_ui()
+
+    def init_ui(self):
+        v_layout = QtGui.QVBoxLayout()
+        h_layout = QtGui.QHBoxLayout()
+
+        
+
 def enter_vocab():
     # showInfo("hahahaha")
     mw.text = QtGui.QLineEdit()
