@@ -10,6 +10,8 @@ from aqt.qt import *
 
 from aqt import mw
 
+from anki.hooks import addHook
+
 ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
 ## BY DOING mw.reset()
 
@@ -27,5 +29,7 @@ field_to_match = ''
 for (name_of_field, contents) in deck_note.items():
     if name_of_field == field_to_match:
         ## change due value to 0
+
+## I might need to use SQLITE
 
 
