@@ -32,16 +32,21 @@ name_of_deck = ''
 ## will search
 field_to_match = ''
 
-list_of_vocabs = []  # create an empty set, note: {} is an empty dictionary, set() = empty set
+# list_of_vocabs = []  # create an empty set, note: {} is an empty dictionary, set() = empty set
 
 
 class TextEditor(QtGui.QLineEdit):
     def __init__(self):
-        super(TextEditor, self).__init__()
+        super(TextEditor, self).__init__(mw)    # I have no idea why I put mw there
 
         self.vocabulary_text = QtGui.QTextEdit(self)
         self.clr_btn = QtGui.QPushButton('Clear')
         self.resched_btn = QtGui.QPushButton('Reschedule')
+
+        # temp button
+        self.show_contents = QtGui.QPushButton('Show Contents')
+
+        self.list_of_vocabs = []
 
         self.init_ui()
 
@@ -49,7 +54,31 @@ class TextEditor(QtGui.QLineEdit):
         v_layout = QtGui.QVBoxLayout()
         h_layout = QtGui.QHBoxLayout()
 
-        
+        # buttons lined horizontally
+        # to be added later to v_layout
+        h_layout.addWidget(self.clr_btn)
+        h_layout.addWidget(self.resched_btn)
+        h_layout.addWidget(self.show_contents)
+
+        v_layout.addWidget(self.vocabulary_text)
+
+        v_layout.addLayout(h_layout)
+
+        self.vocabulary_text.textChanged.connect(self.value_changed)
+        self.show_contents.clicked.connect()
+
+    def value_changed(self):
+        self.vocabulary_text.setText(str(self.vocabulary_text.text()))
+        # list_of_vocabs = mw.text.text()
+
+        self.list_of_vocabs = []    # empty it before filling it again
+
+        for line in self.vocabulary_text.text():
+            self.list_of_vocabs.append(line)
+
+    def show_contents(self):
+        showInfo(str(self.list_of_vocabs))
+
 
 def enter_vocab():
     # showInfo("hahahaha")
@@ -58,15 +87,15 @@ def enter_vocab():
     mw.text.show()
     # list_of_vocabs = mw.text.text()
 
-def value_changed():
-    mw.text.setText(str(mw.text.text()))
-    # list_of_vocabs = mw.text.text()
+# def value_changed():
+#     mw.text.setText(str(mw.text.text()))
+#     # list_of_vocabs = mw.text.text()
+#
+#     for line in mw.text.text():
+#         list_of_vocabs.append(line)
 
-    for line in mw.text.text():
-        list_of_vocabs.append(line)
-
-def show_contents():
-    showInfo(str(list_of_vocabs))
+# def show_contents():
+#     showInfo(str(list_of_vocabs))
 
 
 # for (name_of_field, contents) in deck_note.items():
