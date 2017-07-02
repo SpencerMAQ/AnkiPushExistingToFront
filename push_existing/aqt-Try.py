@@ -11,7 +11,7 @@ from aqt import mw
 from anki.hooks import addHook
 from aqt.utils import showInfo
 # from PyQt5 import QtWidgets, QtGui
-from PyQt4 import QtCore, QtGui
+# from PyQt4 import QtCore, QtGui
 # from pprint import pprint
 
 __version__ = '1.0.0'
@@ -35,16 +35,16 @@ field_to_match = ''
 # list_of_vocabs = []  # create an empty set, note: {} is an empty dictionary, set() = empty set
 
 
-class TextEditor(QtGui.QDialog):
+class TextEditor():
     def __init__(self, mw):
 
-        # if mw:
-        self.run_action = QAction("Push Existing Vocab", mw)
-        self.run_action.setShortcut(QKeySequence(HOTKEY))
+        if mw:
+            self.run_action = QAction("Push Existing Vocab", mw)
+            self.run_action.setShortcut(QKeySequence(HOTKEY))
 
-        mw.connect(self.run_action, SIGNAL("triggered()"), self.init_ui())
+            self.run_action.triggered.connect(lambda: self.init_ui(mw))
 
-        mw.form.menuTools.addAction(self.run_action)
+            mw.form.menuTools.addAction(self.run_action)
 
             # run_action.triggered.connect(enter_vocab)
 
@@ -56,19 +56,20 @@ class TextEditor(QtGui.QDialog):
 
         # self.init_ui()
 
-    def init_ui(self):
+    def init_ui(self, mw):
         # super(TextEditor, self).__init__(mw)
         # mw lol
 
-        self.vocabulary_text = QtGui.QTextEdit(self)
-        self.clr_btn = QtGui.QPushButton('Clear')
-        self.resched_btn = QtGui.QPushButton('Reschedule')
+        # QTextEdit 1st arg = parent
+        self.vocabulary_text = QTextEdit(mw)
+        self.clr_btn = QPushButton('Clear')
+        self.resched_btn = QPushButton('Reschedule')
 
         # temp button
-        self.show_contents = QtGui.QPushButton('Show Contents')
+        self.show_contents = QPushButton('Show Contents')
 
-        v_layout = QtGui.QVBoxLayout()
-        h_layout = QtGui.QHBoxLayout()
+        v_layout = QVBoxLayout()
+        h_layout = QHBoxLayout()
 
         # buttons lined horizontally
         # to be added later to v_layout
@@ -83,7 +84,7 @@ class TextEditor(QtGui.QDialog):
         self.vocabulary_text.textChanged.connect(self.value_changed)
         self.show_contents.clicked.connect(self.show_contents_signal)
 
-        self.show()
+        # self.show()
 
     def value_changed(self):
         self.vocabulary_text.setText(str(self.vocabulary_text.toPlainText()))
