@@ -75,26 +75,30 @@ class TextEditor(QDialog):
 
         self.vocabulary_text = QTextEdit(mw)    # QTextEdit 1st arg = parent
 
+        ####________BUTTONS__________#######
         self.clr_btn = QPushButton('Clear') # works
         self.resched_btn = QPushButton('Reschedule')
         self.write_to_list_btn = QPushButton('Write to List')
         self.write_to_txt_btn = QPushButton('Write to CSV')
         self.import_btn = QPushButton('Import CSV')
 
+        # temp button
+        self.show_contents = QPushButton('Show Contents')
+
+        ####________SIGNALS__________#######
         self.write_to_list_btn.clicked.connect(self.write_to_list)
         self.resched_btn.clicked.connect(self.reschedule_cards)
         self.clr_btn.clicked.connect(self.clear_text)
         self.write_to_txt_btn.clicked.connect(self.csv_write)
-        self.import_btn.clicked.connect(self.import_csv)
+        self.import_btn.clicked.connect(lambda: self.import_csv(delimiter=))
+        self.show_contents.clicked.connect(self.show_contents_signal)
 
-        # temp button
-        self.show_contents = QPushButton('Show Contents')
+        self.vocabulary_text.textChanged.connect(self.value_changed)
 
         self.init_ui()
 
 
     def init_ui(self):
-        # showInfo(str(self))
 
         v_layout = QVBoxLayout()
         h_layout = QHBoxLayout()
@@ -114,12 +118,10 @@ class TextEditor(QDialog):
 
         self.setLayout(v_layout)
 
-        # signals
-        self.vocabulary_text.textChanged.connect(self.value_changed)
-        self.show_contents.clicked.connect(self.show_contents_signal)
-
         self.show()
 
+
+    # doesn't fucking work
     def value_changed(self):
         # self.vocabulary_text.setText(str(self.vocabulary_text.toPlainText()))
         # list_of_vocabs = mw.text.text()
@@ -132,23 +134,29 @@ class TextEditor(QDialog):
 
     def csv_write(self):
         filename = QFileDialog.getSaveFileName(self,
-                                               'Save CSV', os.getenv('HOME'), 'TXT(*.csv *.txt)')
-        if filename:
-            if filename[0] != '':   # what does this do again?
-                with open(filename[0], 'w') as file:
-                    for line in self.vocabulary_text.toPlainText():
-                        file.writelines(str(line))
-
-    def import_csv(self):
-        # getOpenFileName (QWidget parent = None, QString caption = '',
-        # QString directory = '', QString filter = '', Options options = 0)
-        filename = QFileDialog.getOpenFileName(self,
-                                               'Open CSV', os.getenv('HOME'), 'TXT(*.csv *.txt)')
+                                               'Save CSV', os.getenv('HOME'),
+                                               'TXT(*.csv *.txt)')
         if filename:
             if filename != '':   # what does this do again?
                 with open(filename, 'w') as file:
 
-                    csvreader = csv.reader(file, delimiter='\n', quotechar='|')
+                    # csvreader = csv.reader(file, delimiter='\n', quotechar='|')
+                    for line in self.vocabulary_text.toPlainText():
+                        file.writelines(str(line))
+
+    # works!
+    def import_csv(self, delimiter='\n'):
+        # getOpenFileName (QWidget parent = None, QString caption = '',
+        # QString directory = '', QString filter = '', Options options = 0)
+        filename = QFileDialog.getOpenFileName(self,
+                                               'Open CSV', os.getenv('HOME'),
+                                               'TXT(*.csv *.txt)')
+         
+        if filename:
+            if filename != '':   # what does this do again?
+                with open(filename, 'r') as file:
+
+                    csvreader = csv.reader(file, delimiter, quotechar='|')
                     for line in csvreader:
                         self.list_of_vocabs.append(line)
 
@@ -156,9 +164,10 @@ class TextEditor(QDialog):
         for line in self.vocabulary_text.toPlainText():
             self.list_of_vocabs.append(line)
 
+    #
     def show_contents_signal(self):
-        # showInfo(str(self.list_of_vocabs))
-        showInfo(str(len(self.list_of_vocabs)))
+        # showInfo(str(len(self.list_of_vocabs)))
+        showInfo(str(self.list_of_vocabs))
 
     # works
     def clear_text(self):
