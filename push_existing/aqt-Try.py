@@ -99,6 +99,7 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.resched_btn)
         h_layout.addWidget(self.show_contents)
         h_layout.addWidget(self.write_to_list_btn)
+        h_layout.addWidget(self.write_to_txt_btn)
 
         v_layout.addWidget(self.vocabulary_text)
 
@@ -113,10 +114,11 @@ class TextEditor(QDialog):
         self.show()
 
     def value_changed(self):
-        self.vocabulary_text.setText(str(self.vocabulary_text.toPlainText()))
+        # self.vocabulary_text.setText(str(self.vocabulary_text.toPlainText()))
         # list_of_vocabs = mw.text.text()
 
-        self.list_of_vocabs = []    # empty it before filling it again
+        self.list_of_vocabs = self.list_of_vocabs [:]    # empty it before filling it again
+                # create empty list slice
 
         for line in self.vocabulary_text.toPlainText():
             self.list_of_vocabs.append(line)
@@ -128,7 +130,7 @@ class TextEditor(QDialog):
         if filename[0] != '':   # what does this do again?
             with open(filename[0], 'w') as file:
                 for line in self.vocabulary_text.toPlainText():
-                    file.writelines(line)
+                    file.writelines(str(line))
 
 
     def write_to_list(self):
@@ -141,6 +143,7 @@ class TextEditor(QDialog):
     # works
     def clear_text(self):
         self.vocabulary_text.clear()
+        self.vocabulary_text.setText('')
 
     def reschedule_cards(self):
         pass
