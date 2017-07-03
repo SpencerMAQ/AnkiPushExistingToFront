@@ -63,24 +63,17 @@ class TextEditor(QDialog):
         # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
         super(TextEditor, self).__init__(parent)
 
-        # if parent:
-        #     self.run_action = QAction("Push Existing Vocab", parent)
-        #     self.run_action.setShortcut(QKeySequence(HOTKEY))
-        #
-        #     self.run_action.triggered.connect(lambda: self.init_ui(parent))
-        #
-        #     mw.form.menuTools.addAction(self.run_action)
-
         self.list_of_vocabs = []
 
         self.vocabulary_text = QTextEdit(mw)    # QTextEdit 1st arg = parent
 
         ####________BUTTONS__________#######
-        self.clr_btn = QPushButton('Clear') # works
+        self.clr_btn = QPushButton('Clear Text') # works
         self.resched_btn = QPushButton('Reschedule')
         self.write_to_list_btn = QPushButton('Write to List')
         self.write_to_txt_btn = QPushButton('Write to CSV')
         self.import_btn = QPushButton('Import CSV')
+        self.clear_list = QPushButton('Clear List')
 
         # temp button
         self.show_contents = QPushButton('Show Contents')
@@ -90,16 +83,19 @@ class TextEditor(QDialog):
         self.resched_btn.clicked.connect(self.reschedule_cards)
         self.clr_btn.clicked.connect(self.clear_text)
         self.write_to_txt_btn.clicked.connect(self.csv_write)
-        self.import_btn.clicked.connect(lambda: self.import_csv(delimiter=))
+        # add an additional LineEdit box where I can input what the delimiter will be
+        self.import_btn.clicked.connect(lambda: self.import_csv(delimiter='\n'))
         self.show_contents.clicked.connect(self.show_contents_signal)
+        self.clear_list.clicked.connect(self.reset_list)
 
         self.vocabulary_text.textChanged.connect(self.value_changed)
 
+        #setWindowTitle is probably a super method from QtGui
+        self.setWindowTitle('Push')
+
         self.init_ui()
 
-
     def init_ui(self):
-
         v_layout = QVBoxLayout()
         h_layout = QHBoxLayout()
 
@@ -111,6 +107,7 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.write_to_list_btn)
         h_layout.addWidget(self.write_to_txt_btn)
         h_layout.addWidget(self.import_btn)
+        h_layout.addWidget(self.clear_list)
 
         v_layout.addWidget(self.vocabulary_text)
 
@@ -126,23 +123,28 @@ class TextEditor(QDialog):
         # self.vocabulary_text.setText(str(self.vocabulary_text.toPlainText()))
         # list_of_vocabs = mw.text.text()
 
-        self.list_of_vocabs = self.list_of_vocabs [:]    # empty it before filling it again
+        self.list_of_vocabs[:] = []    # empty it before filling it again
                 # create empty list slice
 
         for line in self.vocabulary_text.toPlainText():
             self.list_of_vocabs.append(line)
 
+    # temporary
+    # only created this so that I'd see what the contents are
+    # works but the file is empty
     def csv_write(self):
         filename = QFileDialog.getSaveFileName(self,
                                                'Save CSV', os.getenv('HOME'),
                                                'TXT(*.csv *.txt)')
+        showInfo(filename)
         if filename:
             if filename != '':   # what does this do again?
                 with open(filename, 'w') as file:
 
-                    # csvreader = csv.reader(file, delimiter='\n', quotechar='|')
-                    for line in self.vocabulary_text.toPlainText():
-                        file.writelines(str(line))
+                    # csvwriter = csv.writer(file, delimiter='\n', quotechar='|')
+                    for line in self.list_of_vocabs:
+                        # showInfo(line)
+                        file.write(line)
 
     # works!
     def import_csv(self, delimiter='\n'):
@@ -151,12 +153,12 @@ class TextEditor(QDialog):
         filename = QFileDialog.getOpenFileName(self,
                                                'Open CSV', os.getenv('HOME'),
                                                'TXT(*.csv *.txt)')
-         
+
         if filename:
             if filename != '':   # what does this do again?
                 with open(filename, 'r') as file:
 
-                    csvreader = csv.reader(file, delimiter, quotechar='|')
+                    csvreader = csv.reader(file, delimiter=delimiter, quotechar='|')
                     for line in csvreader:
                         self.list_of_vocabs.append(line)
 
@@ -173,6 +175,11 @@ class TextEditor(QDialog):
     def clear_text(self):
         self.vocabulary_text.clear()
         self.vocabulary_text.setText('')
+
+    def reset_list(self):
+        # how to empty list
+        # https://stackoverflow.com/questions/1400608/how-to-empty-a-list-in-python
+        self.list_of_vocabs[:] = []
 
     def reschedule_cards(self):
         pass
