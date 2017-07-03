@@ -60,21 +60,20 @@ class TextEditor(QDialog):
         # QTextEdit 1st arg = parent
         self.vocabulary_text = QTextEdit(mw)
 
-
-        self.v_layout = QVBoxLayout()
-        self.h_layout = QHBoxLayout()
+        v_layout = QVBoxLayout()
+        h_layout = QHBoxLayout()
 
         # buttons lined horizontally
         # to be added later to v_layout
-        self.h_layout.addWidget(self.clr_btn)
-        self.h_layout.addWidget(self.resched_btn)
-        self.h_layout.addWidget(self.show_contents)
+        h_layout.addWidget(self.clr_btn)
+        h_layout.addWidget(self.resched_btn)
+        h_layout.addWidget(self.show_contents)
 
-        self.v_layout.addWidget(self.vocabulary_text)
+        v_layout.addWidget(self.vocabulary_text)
 
-        self.v_layout.addLayout(self.h_layout)
+        v_layout.addLayout(h_layout)
 
-        self.setLayout(self.v_layout)
+        self.setLayout(v_layout)
 
         # signals
         self.vocabulary_text.textChanged.connect(self.value_changed)
