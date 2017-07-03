@@ -55,17 +55,17 @@ name_of_deck = ''
 
 
 class TextEditor(QDialog):
-    def __init__(self, mw):
+    def __init__(self, parent):
 
         # QDialog args from http://pyqt.sourceforge.net/Docs/PyQt4/qdialog.html#QDialog
         # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
-        super(TextEditor, self).__init__(mw)
+        super(TextEditor, self).__init__(parent)
 
-        if mw:
-            self.run_action = QAction("Push Existing Vocab", mw)
+        if parent:
+            self.run_action = QAction("Push Existing Vocab", parent)
             self.run_action.setShortcut(QKeySequence(HOTKEY))
 
-            self.run_action.triggered.connect(lambda: self.init_ui(mw))
+            self.run_action.triggered.connect(lambda: self.init_ui(parent))
 
             mw.form.menuTools.addAction(self.run_action)
 
@@ -128,7 +128,7 @@ class TextEditor(QDialog):
 
     def csv_write(self):
         filename = QFileDialog.getSaveFileName(self,
-                                               'Save CSV', os.getenv('HOME'), 'CSV(*.csv')
+                                               'Save CSV', os.getenv('HOME'), 'TXT(*.csv, *txt'))
 
         if filename[0] != '':   # what does this do again?
             with open(filename[0], 'w') as file:
@@ -136,7 +136,15 @@ class TextEditor(QDialog):
                     file.writelines(str(line))
 
     def import_csv(self):
-        pass
+        # getOpenFileName (QWidget parent = None, QString caption = '',
+        # QString directory = '', QString filter = '', Options options = 0)
+        filename = QFileDialog.getOpenFileName(self,
+                                               'Open CSV', os.getenv('HOME'), 'TXT(*.csv, *txt'))
+
+        if filename[0] != '':   # what does this do again?
+            with open(filename[0], 'w') as file:
+                for line in file.readlines():
+                    self.list_of_vocabs.append(line)
 
     def write_to_list(self):
         for line in self.vocabulary_text.toPlainText():
