@@ -54,20 +54,22 @@ name_of_deck = ''
 #############################################################
 
 
+
 class TextEditor(QDialog):
+    # mw is passed as parent
     def __init__(self, parent):
 
         # QDialog args from http://pyqt.sourceforge.net/Docs/PyQt4/qdialog.html#QDialog
         # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
         super(TextEditor, self).__init__(parent)
 
-        if parent:
-            self.run_action = QAction("Push Existing Vocab", parent)
-            self.run_action.setShortcut(QKeySequence(HOTKEY))
-
-            self.run_action.triggered.connect(lambda: self.init_ui(parent))
-
-            mw.form.menuTools.addAction(self.run_action)
+        # if parent:
+        #     self.run_action = QAction("Push Existing Vocab", parent)
+        #     self.run_action.setShortcut(QKeySequence(HOTKEY))
+        #
+        #     self.run_action.triggered.connect(lambda: self.init_ui(parent))
+        #
+        #     mw.form.menuTools.addAction(self.run_action)
 
         self.list_of_vocabs = []
 
@@ -88,8 +90,10 @@ class TextEditor(QDialog):
         # temp button
         self.show_contents = QPushButton('Show Contents')
 
+        self.init_ui()
 
-    def init_ui(self, mw):
+
+    def init_ui(self):
         # showInfo(str(self))
 
         v_layout = QVBoxLayout()
@@ -128,23 +132,25 @@ class TextEditor(QDialog):
 
     def csv_write(self):
         filename = QFileDialog.getSaveFileName(self,
-                                               'Save CSV', os.getenv('HOME'), 'TXT(*.csv, *txt'))
-
-        if filename[0] != '':   # what does this do again?
-            with open(filename[0], 'w') as file:
-                for line in self.vocabulary_text.toPlainText():
-                    file.writelines(str(line))
+                                               'Save CSV', os.getenv('HOME'), 'TXT(*.csv *.txt)')
+        if filename:
+            if filename[0] != '':   # what does this do again?
+                with open(filename[0], 'w') as file:
+                    for line in self.vocabulary_text.toPlainText():
+                        file.writelines(str(line))
 
     def import_csv(self):
         # getOpenFileName (QWidget parent = None, QString caption = '',
         # QString directory = '', QString filter = '', Options options = 0)
         filename = QFileDialog.getOpenFileName(self,
-                                               'Open CSV', os.getenv('HOME'), 'TXT(*.csv, *txt'))
+                                               'Open CSV', os.getenv('HOME'), 'TXT(*.csv *.txt)')
+        if filename:
+            if filename != '':   # what does this do again?
+                with open(filename, 'w') as file:
 
-        if filename[0] != '':   # what does this do again?
-            with open(filename[0], 'w') as file:
-                for line in file.readlines():
-                    self.list_of_vocabs.append(line)
+                    csvreader = csv.reader(file, delimiter='\n', quotechar='|')
+                    for line in csvreader:
+                        self.list_of_vocabs.append(line)
 
     def write_to_list(self):
         for line in self.vocabulary_text.toPlainText():
@@ -163,7 +169,14 @@ class TextEditor(QDialog):
         pass
 
 
-mw.texteditor = TextEditor(mw)
+def init_window():
+    mw.texteditor = TextEditor(mw)
+
+run_action = QAction('Push Existing Vocabulary', mw)
+run_action.setShortcut(QKeySequence(HOTKEY))
+run_action.triggered.connect(init_window)
+
+mw.form.menuTools.addAction(run_action)
 
 ## I might need to use SQLITE for changing the due value of the said cards
 ## and unsuspend them simultaneously
