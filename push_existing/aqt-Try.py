@@ -77,11 +77,13 @@ class TextEditor(QDialog):
         self.resched_btn = QPushButton('Reschedule')
         self.write_to_list_btn = QPushButton('Write to List')
         self.write_to_txt_btn = QPushButton('Write to CSV')
+        self.import_btn = QPushButton('Import CSV')
 
         self.write_to_list_btn.clicked.connect(self.write_to_list)
         self.resched_btn.clicked.connect(self.reschedule_cards)
         self.clr_btn.clicked.connect(self.clear_text)
         self.write_to_txt_btn.clicked.connect(self.csv_write)
+        self.import_btn.clicked.connect(self.import_csv)
 
         # temp button
         self.show_contents = QPushButton('Show Contents')
@@ -100,6 +102,7 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.show_contents)
         h_layout.addWidget(self.write_to_list_btn)
         h_layout.addWidget(self.write_to_txt_btn)
+        h_layout.addWidget(self.import_btn)
 
         v_layout.addWidget(self.vocabulary_text)
 
@@ -132,13 +135,16 @@ class TextEditor(QDialog):
                 for line in self.vocabulary_text.toPlainText():
                     file.writelines(str(line))
 
+    def import_csv(self):
+        pass
 
     def write_to_list(self):
         for line in self.vocabulary_text.toPlainText():
             self.list_of_vocabs.append(line)
 
     def show_contents_signal(self):
-        showInfo(str(self.list_of_vocabs))
+        # showInfo(str(self.list_of_vocabs))
+        showInfo(str(len(self.list_of_vocabs)))
 
     # works
     def clear_text(self):
