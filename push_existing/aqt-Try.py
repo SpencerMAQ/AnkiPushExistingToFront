@@ -6,16 +6,13 @@ Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 201
 License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
 """
 
-from aqt.qt import *
+from aqt.qt import *    # imports the same modules as QtCore, QtGui
 from aqt import mw
 from anki.hooks import addHook
 from aqt.utils import showInfo
-# from PyQt5 import QtWidgets, QtGui
-# from PyQt4 import QtCore, QtGui
-# from pprint import pprint
 
 __version__ = '1.0.0'
-# July 2 2017
+# July 3 2017
 
 ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
 ## BY DOING mw.reset()
