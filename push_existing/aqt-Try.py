@@ -17,7 +17,7 @@ __version__ = '1.0.0'
 ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
 ## BY DOING mw.reset()
 
-HOTKEY = "Ctrl+Shift+P"
+HOTKEY = "Shift+P"
 
 ## Select the deck you'd want to change
 name_of_deck = ''
@@ -44,7 +44,7 @@ class TextEditor(QDialog):
 
         self.list_of_vocabs = []
 
-        self.clr_btn = QPushButton('Clear')
+        self.clr_btn = QPushButton('Clear') # works
         self.resched_btn = QPushButton('Reschedule')
 
         self.resched_btn.clicked.connect(self.reschedule_cards)
@@ -94,6 +94,7 @@ class TextEditor(QDialog):
     def show_contents_signal(self):
         showInfo(str(self.list_of_vocabs))
 
+    # works
     def clear_text(self):
         self.vocabulary_text.clear()
 
