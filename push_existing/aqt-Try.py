@@ -19,16 +19,38 @@ __version__ = '1.0.0'
 
 HOTKEY = "Shift+P"
 
-## Select the deck you'd want to change
-name_of_deck = ''
+
 # deck_id = mw.col.decks.id(name_of_deck)
 # deck = mw.col.decks.select(deck_id)
 #
 # deck_note = deck.note()
 
+#################________FIELDS___________###################
+
+
 ## The name of the field where the add-on
 ## will search
-field_to_match = ''
+field_to_match = ''     # e.g. expression
+## Select the deck you'd want to change
+name_of_deck = ''
+
+#############################################################
+
+####_________________TO_DO_LIST_________#####################
+####
+# Include total count of vocab pasted
+# total count of cards brought to front
+# display number of cards that failed to be brought to front
+# maybe this'd work better if you did by note type instead of deck? (or maybe both)
+# display the vocabs that were found (and total number)
+# display the vocabs that were NOT found (and total number)
+# add functionality to tag the cards that were moved by adding tag: movedByPushToFrontPlugin
+
+
+# include functionaly for user to push only CERTAIN CARDS, not entire notes
+
+#############################################################
+
 
 class TextEditor(QDialog):
     def __init__(self, mw):
@@ -55,7 +77,7 @@ class TextEditor(QDialog):
 
 
     def init_ui(self, mw):
-        showInfo(str(self))
+        # showInfo(str(self))
 
         # QTextEdit 1st arg = parent
         self.vocabulary_text = QTextEdit(mw)
