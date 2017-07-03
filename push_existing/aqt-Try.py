@@ -10,6 +10,8 @@ from aqt.qt import *    # imports the same modules as QtCore, QtGui
 from aqt import mw
 from anki.hooks import addHook
 from aqt.utils import showInfo
+import csv
+import os
 
 __version__ = '1.0.0'
 # July 3 2017
@@ -54,7 +56,10 @@ name_of_deck = ''
 
 class TextEditor(QDialog):
     def __init__(self, mw):
-        super(TextEditor, self).__init__()
+
+        # QDialog args from http://pyqt.sourceforge.net/Docs/PyQt4/qdialog.html#QDialog
+        # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
+        super(TextEditor, self).__init__(mw)
 
         if mw:
             self.run_action = QAction("Push Existing Vocab", mw)
@@ -66,11 +71,17 @@ class TextEditor(QDialog):
 
         self.list_of_vocabs = []
 
+        self.vocabulary_text = QTextEdit(mw)    # QTextEdit 1st arg = parent
+
         self.clr_btn = QPushButton('Clear') # works
         self.resched_btn = QPushButton('Reschedule')
+        self.write_to_list_btn = QPushButton('Write to List')
+        self.write_to_txt_btn = QPushButton('Write to CSV')
 
+        self.write_to_list_btn.clicked.connect(self.write_to_list)
         self.resched_btn.clicked.connect(self.reschedule_cards)
         self.clr_btn.clicked.connect(self.clear_text)
+        self.write_to_txt_btn.clicked.connect(self.csv_write)
 
         # temp button
         self.show_contents = QPushButton('Show Contents')
@@ -78,9 +89,6 @@ class TextEditor(QDialog):
 
     def init_ui(self, mw):
         # showInfo(str(self))
-
-        # QTextEdit 1st arg = parent
-        self.vocabulary_text = QTextEdit(mw)
 
         v_layout = QVBoxLayout()
         h_layout = QHBoxLayout()
@@ -90,6 +98,7 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.clr_btn)
         h_layout.addWidget(self.resched_btn)
         h_layout.addWidget(self.show_contents)
+        h_layout.addWidget(self.write_to_list_btn)
 
         v_layout.addWidget(self.vocabulary_text)
 
@@ -109,6 +118,20 @@ class TextEditor(QDialog):
 
         self.list_of_vocabs = []    # empty it before filling it again
 
+        for line in self.vocabulary_text.toPlainText():
+            self.list_of_vocabs.append(line)
+
+    def csv_write(self):
+        filename = QFileDialog.getSaveFileName(self,
+                                               'Save CSV', os.getenv('HOME'), 'CSV(*.csv')
+
+        if filename[0] != '':   # what does this do again?
+            with open(filename[0], 'w') as file:
+                for line in self.vocabulary_text.toPlainText():
+                    file.writelines(line)
+
+
+    def write_to_list(self):
         for line in self.vocabulary_text.toPlainText():
             self.list_of_vocabs.append(line)
 
