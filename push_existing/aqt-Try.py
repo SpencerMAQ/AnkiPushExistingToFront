@@ -6,7 +6,7 @@ Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 201
 License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
 """
 
-from aqt.qt import *    # imports the same modules as QtCore, QtGui
+from aqt.qt import *             # imports the same modules as QtCore, QtGui
 from aqt import mw
 from anki.hooks import addHook
 from aqt.utils import showInfo
@@ -16,8 +16,8 @@ import os
 __version__ = '1.0.0'
 # July 3 2017
 
-## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
-## BY DOING mw.reset()
+# ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
+# ## BY DOING mw.reset()
 
 HOTKEY = "Shift+P"
 
@@ -27,18 +27,18 @@ HOTKEY = "Shift+P"
 #
 # deck_note = deck.note()
 
-#################________FIELDS___________###################
+# #################________FIELDS___________###################
 
 
-## The name of the field where the add-on
-## will search
+# ## The name of the field where the add-on
+# ## will search
 field_to_match = ''     # e.g. expression
-## Select the deck you'd want to change
+# ## Select the deck you'd want to change
 name_of_deck = ''
 
 #############################################################
 
-####_________________TO_DO_LIST_________#####################
+# ####_________________TO_DO_LIST_________#####################
 ####
 # Include total count of vocab pasted
 # total count of cards brought to front
@@ -47,12 +47,12 @@ name_of_deck = ''
 # display the vocabs that were found (and total number)
 # display the vocabs that were NOT found (and total number)
 # add functionality to tag the cards that were moved by adding tag: movedByPushToFrontPlugin
-
+# drop-down menu of decks and note types
+# drop-down menu of delimiter
 
 # include functionaly for user to push only CERTAIN CARDS, not entire notes
 
 #############################################################
-
 
 
 class TextEditor(QDialog):
@@ -65,10 +65,10 @@ class TextEditor(QDialog):
 
         self.list_of_vocabs = []
 
-        self.vocabulary_text = QTextEdit(mw)    # QTextEdit 1st arg = parent
+        self.vocabulary_text = QTextEdit(mw)                    # QTextEdit 1st arg = parent
 
-        ####________BUTTONS__________#######
-        self.clr_btn = QPushButton('Clear Text') # works
+        # ####________BUTTONS__________#######
+        self.clr_btn = QPushButton('Clear Text')                # works
         self.resched_btn = QPushButton('Reschedule')
         self.write_to_list_btn = QPushButton('Write to List')
         self.write_to_txt_btn = QPushButton('Write to CSV')
@@ -78,7 +78,7 @@ class TextEditor(QDialog):
         # temp button
         self.show_contents = QPushButton('Show Contents')
 
-        ####________SIGNALS__________#######
+        # ####________SIGNALS__________#######
         self.write_to_list_btn.clicked.connect(self.write_to_list)
         self.resched_btn.clicked.connect(self.reschedule_cards)
         self.clr_btn.clicked.connect(self.clear_text)
@@ -90,7 +90,7 @@ class TextEditor(QDialog):
 
         self.vocabulary_text.textChanged.connect(self.value_changed)
 
-        #setWindowTitle is probably a super method from QtGui
+        # setWindowTitle is probably a super method from QtGui
         self.setWindowTitle('Push')
 
         self.init_ui()
@@ -117,14 +117,12 @@ class TextEditor(QDialog):
 
         self.show()
 
-
     # doesn't fucking work
     def value_changed(self):
         # self.vocabulary_text.setText(str(self.vocabulary_text.toPlainText()))
         # list_of_vocabs = mw.text.text()
 
         self.list_of_vocabs[:] = []    # empty it before filling it again
-                # create empty list slice
 
         for line in self.vocabulary_text.toPlainText():
             self.list_of_vocabs.append(line)
@@ -194,5 +192,5 @@ run_action.triggered.connect(init_window)
 
 mw.form.menuTools.addAction(run_action)
 
-## I might need to use SQLITE for changing the due value of the said cards
-## and unsuspend them simultaneously
+# ## I might need to use SQLITE for changing the due value of the said cards
+# ## and unsuspend them simultaneously
