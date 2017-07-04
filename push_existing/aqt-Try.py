@@ -14,7 +14,7 @@ import csv
 import os
 
 __version__ = '1.0.0'
-# July 3 2017
+# July 4 2017
 
 # ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
 # ## BY DOING mw.reset()
