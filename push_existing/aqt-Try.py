@@ -14,7 +14,7 @@ import csv
 import os
 
 __version__ = '1.0.0'
-# July 4 2017
+# July 5 2017
 
 # ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
 # ## BY DOING mw.reset()
@@ -65,7 +65,7 @@ class TextEditor(QDialog):
 
         self.list_of_vocabs = []
 
-        self.vocabulary_text = QTextEdit(mw)                    # QTextEdit 1st arg = parent
+        self.vocabulary_text = QTextEdit(self)                  # QTextEdit 1st arg = parent
 
         # ####________BUTTONS__________#######
         self.clr_btn = QPushButton('Clear Text')                # works
