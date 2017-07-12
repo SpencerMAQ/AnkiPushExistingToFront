@@ -4,14 +4,12 @@
 # Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 2017
 # License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
 
-
 from aqt.qt import *
 from aqt import mw
 from anki.hooks import addHook
 from aqt.utils import showInfo
 import csv
 import os
-
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -78,7 +76,7 @@ class TextEditor(QDialog):
         self.import_btn = QPushButton('Import CSV')
         self.clear_list = QPushButton('Clear List')
 
-        # temp button
+        # FIXME: temp button
         self.show_contents = QPushButton('Show Contents')
 
         # ####________SIGNALS__________#######
@@ -86,7 +84,7 @@ class TextEditor(QDialog):
         self.resched_btn.clicked.connect(self.reschedule_cards)
         self.clr_btn.clicked.connect(self.clear_text)
         self.write_to_txt_btn.clicked.connect(self.csv_write)
-        # add an additional LineEdit box where I can input what the delimiter will be
+        # TODO: add an additional LineEdit box where I can input what the delimiter will be
         self.import_btn.clicked.connect(lambda: self.import_csv(delimiter='\n'))
         self.show_contents.clicked.connect(self.show_contents_signal)
         self.clear_list.clicked.connect(self.reset_list)
@@ -120,7 +118,7 @@ class TextEditor(QDialog):
 
         self.show()
 
-    # doesn't fucking work
+    # FIXME: doesn't fucking work
     def value_changed(self):
         # self.vocabulary_text.setText(str(self.vocabulary_text.toPlainText()))
         # list_of_vocabs = mw.text.text()
@@ -132,7 +130,7 @@ class TextEditor(QDialog):
 
     # temporary
     # only created this so that I'd see what the contents are
-    # fixme: works but the file is empty
+    # FIXME: works but the file is empty
     def csv_write(self):
         filename = QFileDialog.getSaveFileName(self,
                                                'Save CSV', os.getenv('HOME'),
@@ -197,3 +195,4 @@ mw.form.menuTools.addAction(run_action)
 
 # ## I might need to use SQLITE for changing the due value of the said cards
 # ## and unsuspend them simultaneously
+# https://www.python.org/dev/peps/pep-0350/
