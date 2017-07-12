@@ -7,12 +7,12 @@
 from aqt.qt import *
 from aqt import mw
 from anki.hooks import addHook
-from aqt.utils import showInfo
+from aqt.utils import showInfo      # TODO: temporary import
 import csv
 import os
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *       # TODO: temporary import
+from PyQt5.QtGui import *           # TODO: temporary import
 
 __version__ = '1.0.0'
 # July 12 2017
