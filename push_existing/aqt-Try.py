@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
 
-"""
-This file is part of the Push Existing Vocab add-on for Anki
-Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 2017
-License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
-"""
+# This file is part of the Push Existing Vocab add-on for Anki
+# Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 2017
+# License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
 
-from aqt.qt import *             # imports the same modules as QtCore, QtGui
+
+from aqt.qt import *
 from aqt import mw
 from anki.hooks import addHook
 from aqt.utils import showInfo
 import csv
 import os
 
+
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+
 __version__ = '1.0.0'
-# July 5 2017
+# July 12 2017
 
 # ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
 # ## BY DOING mw.reset()
@@ -39,18 +42,18 @@ name_of_deck = ''
 #############################################################
 
 # ####_________________TO_DO_LIST_________#####################
-####
-# Include total count of vocab pasted
-# total count of cards brought to front
-# display number of cards that failed to be brought to front
-# maybe this'd work better if you did by note type instead of deck? (or maybe both)
-# display the vocabs that were found (and total number)
-# display the vocabs that were NOT found (and total number)
-# add functionality to tag the cards that were moved by adding tag: movedByPushToFrontPlugin
-# drop-down menu of decks and note types
-# drop-down menu of delimiter
 
-# include functionaly for user to push only CERTAIN CARDS, not entire notes
+# TODO: Include total count of vocab pasted
+# TODO: total count of cards brought to front
+# TODO: display number of cards that failed to be brought to front
+# TODO: maybe this'd work better if you did by note type instead of deck? (or maybe both)
+# TODO: display the vocabs that were found (and total number)
+# TODO: display the vocabs that were NOT found (and total number)
+# TODO: add functionality to tag the cards that were moved by adding tag: movedByPushToFrontPlugin
+# TODO: drop-down menu of decks and note types
+# TODO: drop-down menu of delimiter
+
+# TODO: include functionaly for user to push only CERTAIN CARDS, not entire notes
 
 #############################################################
 
@@ -129,7 +132,7 @@ class TextEditor(QDialog):
 
     # temporary
     # only created this so that I'd see what the contents are
-    # works but the file is empty
+    # fixme: works but the file is empty
     def csv_write(self):
         filename = QFileDialog.getSaveFileName(self,
                                                'Save CSV', os.getenv('HOME'),
