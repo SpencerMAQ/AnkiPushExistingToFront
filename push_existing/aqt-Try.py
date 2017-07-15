@@ -27,7 +27,7 @@ HOTKEY = "Shift+P"
 #
 # deck_note = deck.note()
 
-# ===================== FIELDS =====================
+# ===================== FIELDS ===================== #
 
 # ## The name of the field where the add-on
 # ## will search
@@ -37,7 +37,7 @@ name_of_deck = ''
 
 #############################################################
 
-#  ===================== TO_DO_LIST =====================
+#  ===================== TO_DO_LIST ===================== #
 
 # TODO: Include total count of vocab pasted
 # TODO: total count of cards brought to front
@@ -51,7 +51,7 @@ name_of_deck = ''
 
 # TODO: include functionaly for user to push only CERTAIN CARDS, not entire notes
 
-# =====================  =====================  =====================
+# =====================  =====================  ===================== #
 
 
 class TextEditor(QDialog):
@@ -70,7 +70,7 @@ class TextEditor(QDialog):
 
         self.vocabulary_text = QTextEdit(self)                  # QTextEdit 1st arg = parent
 
-        # ===================== BUTTONS =====================
+        # ===================== BUTTONS ===================== #
         self.clr_btn = QPushButton('Clear Text')                # works
         self.resched_btn = QPushButton('Reschedule')
         self.write_to_list_btn = QPushButton('Write to List')
@@ -81,7 +81,7 @@ class TextEditor(QDialog):
         # FIXME: temp button
         self.show_contents = QPushButton('Show Contents')
 
-        # ===================== SIGNALS =====================
+        # ===================== SIGNALS ===================== #
         self.write_to_list_btn.clicked.connect(self.write_to_list)
         self.resched_btn.clicked.connect(self.reschedule_cards)
         self.clr_btn.clicked.connect(self.clear_text)
@@ -238,7 +238,8 @@ class TextEditor(QDialog):
 
         # maybe SQLite would be better lol?
 
-        for c, name in enumerate()
+        for c, name in enumerate():
+            pass
 
 
 def init_window():
@@ -252,4 +253,5 @@ mw.form.menuTools.addAction(run_action)
 
 # ## I might need to use SQLITE for changing the due value of the said cards
 # ## and unsuspend them simultaneously
+# TODO: vvv What's that?
 # https://www.python.org/dev/peps/pep-0350/
