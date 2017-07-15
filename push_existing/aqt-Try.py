@@ -15,13 +15,12 @@ from PyQt5.QtWidgets import *       # TODO: temporary import
 from PyQt5.QtGui import *           # TODO: temporary import
 
 __version__ = '1.0.0'
-# July 12 2017
+# July 15 2017
 
 # ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
 # ## BY DOING mw.reset()
 
 HOTKEY = "Shift+P"
-
 
 # deck_id = mw.col.decks.id(name_of_deck)
 # deck = mw.col.decks.select(deck_id)
@@ -29,7 +28,6 @@ HOTKEY = "Shift+P"
 # deck_note = deck.note()
 
 # ===================== FIELDS =====================
-
 
 # ## The name of the field where the add-on
 # ## will search
@@ -68,6 +66,7 @@ class TextEditor(QDialog):
         # associated with a drop-down widget where the drop-down displays all decks and subdecks
         self.selected_deck = ''                                 # TODO: to be filled in by a signal
         self.selected_model = ''
+        self.field_tomatch= ''
 
         self.vocabulary_text = QTextEdit(self)                  # QTextEdit 1st arg = parent
 
@@ -203,8 +202,43 @@ class TextEditor(QDialog):
 
         deck = mw.col.decks.byName(self.selected_deck)
 
+        ids = mw.col.findCards(did) # lol, is this even legal
+        '''
+        from collection.py
+            def findCards(self, query, order=False):
+                return anki.find.Finder(self).findCards(query, order)
+        '''
+
+        '''
+        from anki/find.py
+                def findCards(self, query, order=False):
+                    "Return a list of card ids for QUERY."
+                    tokens = self._tokenize(query)
+                    preds, args = self._where(tokens)
+                    if preds is None:
+                        raise Exception("invalidSearch")
+                    order, rev = self._order(order)
+                    sql = self._query(preds, order)
+                    try:
+                        res = self.col.db.list(sql, *args)
+                    except:
+                        # invalid grouping
+                        return []
+                    if rev:
+                        res.reverse()
+                    return res
+        '''
+        for id in ids:
+            card = mw.col.getCard(id)
+
+        # pprint(deck.values)
+
         # get model of deck
-        mw.col.
+        model = mw.col.models.byName(self.selected_model)
+
+        # maybe SQLite would be better lol?
+
+        for c, name in enumerate()
 
 
 def init_window():
