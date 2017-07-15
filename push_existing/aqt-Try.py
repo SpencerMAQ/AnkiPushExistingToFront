@@ -28,7 +28,7 @@ HOTKEY = "Shift+P"
 #
 # deck_note = deck.note()
 
-# #################________FIELDS___________###################
+# ===================== FIELDS =====================
 
 
 # ## The name of the field where the add-on
@@ -39,7 +39,7 @@ name_of_deck = ''
 
 #############################################################
 
-# ####_________________TO_DO_LIST_________#####################
+#  ===================== TO_DO_LIST =====================
 
 # TODO: Include total count of vocab pasted
 # TODO: total count of cards brought to front
@@ -53,7 +53,7 @@ name_of_deck = ''
 
 # TODO: include functionaly for user to push only CERTAIN CARDS, not entire notes
 
-#############################################################
+# =====================  =====================  =====================
 
 
 class TextEditor(QDialog):
@@ -65,10 +65,13 @@ class TextEditor(QDialog):
         super(TextEditor, self).__init__(parent)
 
         self.list_of_vocabs = []
+        # associated with a drop-down widget where the drop-down displays all decks and subdecks
+        self.selected_deck = ''                                 # TODO: to be filled in by a signal
+        self.selected_model = ''
 
         self.vocabulary_text = QTextEdit(self)                  # QTextEdit 1st arg = parent
 
-        # ####________BUTTONS__________#######
+        # ===================== BUTTONS =====================
         self.clr_btn = QPushButton('Clear Text')                # works
         self.resched_btn = QPushButton('Reschedule')
         self.write_to_list_btn = QPushButton('Write to List')
@@ -79,7 +82,7 @@ class TextEditor(QDialog):
         # FIXME: temp button
         self.show_contents = QPushButton('Show Contents')
 
-        # ####________SIGNALS__________#######
+        # ===================== SIGNALS =====================
         self.write_to_list_btn.clicked.connect(self.write_to_list)
         self.resched_btn.clicked.connect(self.reschedule_cards)
         self.clr_btn.clicked.connect(self.clear_text)
@@ -133,8 +136,10 @@ class TextEditor(QDialog):
     # FIXME: works but the file is empty
     def csv_write(self):
         filename = QFileDialog.getSaveFileName(self,
-                                               'Save CSV', os.getenv('HOME'),
-                                               'TXT(*.csv *.txt)')
+                                               'Save CSV',
+                                               os.getenv('HOME'),
+                                               'TXT(*.csv *.txt)'
+                                               )
         showInfo(filename)
         if filename:
             if filename != '':   # what does this do again?
@@ -150,8 +155,10 @@ class TextEditor(QDialog):
         # getOpenFileName (QWidget parent = None, QString caption = '',
         # QString directory = '', QString filter = '', Options options = 0)
         filename = QFileDialog.getOpenFileName(self,
-                                               'Open CSV', os.getenv('HOME'),
-                                               'TXT(*.csv *.txt)')
+                                               'Open CSV',
+                                               os.getenv('HOME'),
+                                               'TXT(*.csv *.txt)'
+                                               )
 
         if filename:
             if filename != '':   # what does this do again?
@@ -180,8 +187,24 @@ class TextEditor(QDialog):
         # https://stackoverflow.com/questions/1400608/how-to-empty-a-list-in-python
         self.list_of_vocabs[:] = []
 
+    # MAIN
     def reschedule_cards(self):
-        pass
+        # did = mw.col.decks.id("Board_Exam_Rev")
+        # print(dir(mw.col.decks.id("Board_Exam_Rev")))
+        # deck = mw.col.decks.byName("Board_Exam_Rev")
+
+        # NOTE: REPL STUFF
+        # from pprint import pprint
+        #
+        # pprint(dir(mw.col.decks))
+
+        did = mw.col.decks.id(self.selected_deck)   # returns the deck ID of the selected deck
+        mw.col.decks.select(did)                    # select the deck based on ID
+
+        deck = mw.col.decks.byName(self.selected_deck)
+
+        # get model of deck
+        mw.col.
 
 
 def init_window():
