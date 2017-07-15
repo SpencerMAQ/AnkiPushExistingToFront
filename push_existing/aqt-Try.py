@@ -57,6 +57,10 @@ name_of_deck = ''
 class TextEditor(QDialog):
     # mw is passed as parent
     def __init__(self, parent):
+        '''
+        Initialize the UI
+        :param parent:
+        '''
 
         # QDialog args from http://pyqt.sourceforge.net/Docs/PyQt4/qdialog.html#QDialog
         # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
@@ -65,8 +69,8 @@ class TextEditor(QDialog):
         self.list_of_vocabs = []
         # associated with a drop-down widget where the drop-down displays all decks and subdecks
         self.selected_deck = ''                                 # TODO: to be filled in by a signal
-        self.selected_model = ''
-        self.field_tomatch= ''
+        self.selected_model = ''                                # TODO: to be filled in by a signal
+        self.field_tomatch= ''                                  # TODO: to be filled in by a signal
 
         self.vocabulary_text = QTextEdit(self)                  # QTextEdit 1st arg = parent
 
@@ -202,15 +206,30 @@ class TextEditor(QDialog):
 
         deck = mw.col.decks.byName(self.selected_deck)
 
-        ids = mw.col.findCards(did) # lol, is this even legal
+        ids = mw.col.findCards(did)     # lol, is this even legal???
+
+        for id in ids:
+            card = mw.col.getCard(id)
+
+        # pprint(deck.values)
+
+        # get model of deck
+        model = mw.col.models.byName(self.selected_model)
+
+        # maybe SQLite would be better lol?
+
+        for c, name in enumerate():
+            pass
+
         '''
-        from collection.py
+        ------from collection.py------
             def findCards(self, query, order=False):
                 return anki.find.Finder(self).findCards(query, order)
         '''
 
+
         '''
-        from anki/find.py
+        ------from anki/find.py------
                 def findCards(self, query, order=False):
                     "Return a list of card ids for QUERY."
                     tokens = self._tokenize(query)
@@ -228,18 +247,30 @@ class TextEditor(QDialog):
                         res.reverse()
                     return res
         '''
-        for id in ids:
-            card = mw.col.getCard(id)
 
-        # pprint(deck.values)
 
-        # get model of deck
-        model = mw.col.models.byName(self.selected_model)
+        '''
+        ------Note: from __init__.py------
 
-        # maybe SQLite would be better lol?
+        mw = AnkiQt(something.....)
 
-        for c, name in enumerate():
-            pass
+        ------from aqt/main.py------
+        30..    class AnkiQt(QMainWindow):
+        ....
+        258..   def loadCollection(self):
+                    cpath = self.pm.collectionPath()
+                    try:
+                        self.col = Collection(cpath, log=True)
+        '''
+
+
+        '''
+        ------from anki/storage.py-------
+        16..    def Collection(path, lock=True, server=False, sync=True, log=False):
+        ....
+        40..        col = _Collection(db, server, log)
+        '''
+
 
 
 def init_window():
