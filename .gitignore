@@ -1,3 +1,7 @@
+# Why is gitignore not catching these?
+*.xml
+*.iml
+
 # Created by https://www.gitignore.io/api/python,pycharm,windows
 
 ### PyCharm ###
