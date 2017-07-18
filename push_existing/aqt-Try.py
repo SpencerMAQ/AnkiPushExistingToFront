@@ -4,8 +4,11 @@
 # Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 2017
 # License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
 
+# import sys                        # TODO: temp import
+# sys.path.append(r'C:\Users\Mi\AppData\Local\Programs\Python\Python35\Lib\anki\anki')
+# sys.path.append(r'C:\Users\Mi\AppData\Local\Programs\Python\Python35\Lib\anki\aqt')
 from aqt.qt import *
-from aqt import mw
+# from aqt import mw                # TODO: turn this on when you port to anki
 from anki.hooks import addHook
 from aqt.utils import showInfo      # TODO: temporary import
 import csv
@@ -13,6 +16,7 @@ import os
 
 from PyQt5.QtWidgets import *       # TODO: temporary import
 from PyQt5.QtGui import *           # TODO: temporary import
+from anki.storage import Collection
 
 __version__ = '1.0.0'
 # July 15 2017
@@ -21,6 +25,22 @@ __version__ = '1.0.0'
 # ## BY DOING mw.reset()
 
 HOTKEY = "Shift+P"
+
+
+# ===================== TEMPORARY STUFF ===================== #
+# ===================== TEMPORARY STUFF ===================== #
+# just so I can get the namespaces inside  Collection
+# manually typing them is very hard, and I'm very lazy
+
+
+class Temporary:
+    def __init__(self):
+        self.col = Collection('', log=True)
+
+mw = Temporary()
+# ===================== TEMPORARY STUFF ===================== #
+# ===================== TEMPORARY STUFF ===================== #
+
 
 # deck_id = mw.col.decks.id(name_of_deck)
 # deck = mw.col.decks.select(deck_id)
@@ -66,11 +86,11 @@ class TextEditor(QDialog):
         # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
         super(TextEditor, self).__init__(parent)
 
-        self.list_of_vocabs = []
+        self.list_of_vocabs = []                                # list of mined vocab
         # associated with a drop-down widget where the drop-down displays all decks and subdecks
         self.selected_deck = ''                                 # TODO: to be filled in by a signal
         self.selected_model = ''                                # TODO: to be filled in by a signal
-        self.field_tomatch= ''                                  # TODO: to be filled in by a signal
+        self.field_tomatch = ''                                 # TODO: to be filled in by a signal
 
         self.vocabulary_text = QTextEdit(self)                  # QTextEdit 1st arg = parent
 
@@ -192,85 +212,47 @@ class TextEditor(QDialog):
 
     # MAIN
     def reschedule_cards(self):
-        # did = mw.col.decks.id("Board_Exam_Rev")
-        # print(dir(mw.col.decks.id("Board_Exam_Rev")))
-        # deck = mw.col.decks.byName("Board_Exam_Rev")
+        """
+        Main function of the program
+        Checks every Note > Field if it is inside the
+        list of mined words and sets the due date to zero accdngly
+        :return:    None
+        """
+        # did = mw.col.decks.id("")
+        # print(dir(mw.col.decks.id("")))
+        # deck = mw.col.decks.byName("")
 
-        # NOTE: REPL STUFF
-        # from pprint import pprint
-        #
-        # pprint(dir(mw.col.decks))
+        self.field_tomatch = 'Expression_Original_Unedited'
+        self.selected_model = 'Japanese-1b811 example_sentences'
 
-        did = mw.col.decks.id(self.selected_deck)   # returns the deck ID of the selected deck
-        mw.col.decks.select(did)                    # select the deck based on ID
+        mid = mw.col.models.byName(self.selected_model)['id']
+        nids = mw.col.findNotes('mid:' + str(mid))
 
-        deck = mw.col.decks.byName(self.selected_deck)
+        for note_id in nids:
+            note = mw.col.getNote(note_id)
+            # field to match:
+            # note[self.field_tomatch]
+            ctr = 0
+            if note[self.field_tomatch] in self.list_of_vocabs:
+                ctr += 1
+                # note is a dictionary containing all the fields
+                # Note that from common sense, the Notes themselves
+                # won't have due values because it is the cards that
+                # are supposed to be studied
+                cids = mw.col.findCards('nid:' + str(note_id))
+                first_card_id = cids[0]
+                # cids = card IDs (if there is more than one card)
 
-        ids = mw.col.findCards(did)     # lol, is this even legal???
-
-        for id in ids:
-            card = mw.col.getCard(id)
-
-        # pprint(deck.values)
-
-        # get model of deck
-        model = mw.col.models.byName(self.selected_model)
-
-        # maybe SQLite would be better lol?
-
-        for c, name in enumerate():
-            pass
-
-        '''
-        ------from collection.py------
-            def findCards(self, query, order=False):
-                return anki.find.Finder(self).findCards(query, order)
-        '''
-
+                card = mw.col.getCard(first_card_id)
+                # reschedule card
+                card.due = ctr
 
         '''
         ------from anki/find.py------
                 def findCards(self, query, order=False):
                     "Return a list of card ids for QUERY."
-                    tokens = self._tokenize(query)
-                    preds, args = self._where(tokens)
-                    if preds is None:
-                        raise Exception("invalidSearch")
-                    order, rev = self._order(order)
-                    sql = self._query(preds, order)
-                    try:
-                        res = self.col.db.list(sql, *args)
-                    except:
-                        # invalid grouping
-                        return []
-                    if rev:
-                        res.reverse()
-                    return res
-        '''
-
 
         '''
-        ------Note: from __init__.py------
-
-        mw = AnkiQt(something.....)
-
-        ------from aqt/main.py------
-        30..    class AnkiQt(QMainWindow):
-        ....
-        258..   def loadCollection(self):
-                    cpath = self.pm.collectionPath()
-                    try:
-                        self.col = Collection(cpath, log=True)
-        '''
-
-
-        '''
-        ------from anki/storage.py-------
-        16..    def Collection(path, lock=True, server=False, sync=True, log=False):
-        ....
-        40..        col = _Collection(db, server, log)
-        '''
-
 
 
 def init_window():
