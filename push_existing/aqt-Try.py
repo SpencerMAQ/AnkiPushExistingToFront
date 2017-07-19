@@ -8,18 +8,20 @@
 # sys.path.append(r'C:\Users\Mi\AppData\Local\Programs\Python\Python35\Lib\anki\anki')
 # sys.path.append(r'C:\Users\Mi\AppData\Local\Programs\Python\Python35\Lib\anki\aqt')
 from aqt.qt import *
-# from aqt import mw                # TODO: turn this on when you port to anki
+from aqt import mw
 from anki.hooks import addHook
 from aqt.utils import showInfo      # TODO: temporary import
-import csv
+# import csv
 import os
+import codecs
+import time
 
-from PyQt5.QtWidgets import *       # TODO: temporary import
-from PyQt5.QtGui import *           # TODO: temporary import
+# from PyQt5.QtWidgets import *       # TODO: temporary import    =======
+# from PyQt5.QtGui import *           # TODO: temporary import    =======
 from anki.storage import Collection
 
 __version__ = '1.0.0'
-# July 15 2017
+# July 19 2017
 
 # ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
 # ## BY DOING mw.reset()
@@ -31,13 +33,14 @@ HOTKEY = "Shift+P"
 # ===================== TEMPORARY STUFF ===================== #
 # just so I can get the namespaces inside  Collection
 # manually typing them is very hard, and I'm very lazy
+# TODO: comment out when porting
 
+# class Temporary:
+#     def __init__(self):
+#         self.col = Collection('', log=True)
+#
+# mw = Temporary()
 
-class Temporary:
-    def __init__(self):
-        self.col = Collection('', log=True)
-
-mw = Temporary()
 # ===================== TEMPORARY STUFF ===================== #
 # ===================== TEMPORARY STUFF ===================== #
 
@@ -87,6 +90,10 @@ class TextEditor(QDialog):
         super(TextEditor, self).__init__(parent)
 
         self.list_of_vocabs = []                                # list of mined vocab
+
+        self.matched_vocab = []                                 # matched and rescheduled
+        self.matchned_but_not_rescheduled = []
+        self.unmatched_vocab = []
         # associated with a drop-down widget where the drop-down displays all decks and subdecks
         self.selected_deck = ''                                 # TODO: to be filled in by a signal
         self.selected_model = ''                                # TODO: to be filled in by a signal
@@ -102,6 +109,10 @@ class TextEditor(QDialog):
         self.import_btn = QPushButton('Import CSV')
         self.clear_list = QPushButton('Clear List')
 
+        self.show_reschd_matched_cards = QPushButton('Show Rescheduled Matches')
+        self.show_nonrschd_matched_cards = QPushButton('Show Matched but not Reschedued')
+        self.show_unmatched_cards = QPushButton('Cards without any matches')
+
         # FIXME: temp button
         self.show_contents = QPushButton('Show Contents')
 
@@ -114,6 +125,10 @@ class TextEditor(QDialog):
         self.import_btn.clicked.connect(lambda: self.import_csv(delimiter='\n'))
         self.show_contents.clicked.connect(self.show_contents_signal)
         self.clear_list.clicked.connect(self.reset_list)
+
+        self.show_reschd_matched_cards.clicked.connect(self.show_rescheduled)
+        self.show_nonrschd_matched_cards.clicked.connect(self.show_not_rescheduled)
+        self.show_unmatched_cards.clicked.connect(self.show_not_matched)
 
         self.vocabulary_text.textChanged.connect(self.value_changed)
 
@@ -135,6 +150,10 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.write_to_txt_btn)
         h_layout.addWidget(self.import_btn)
         h_layout.addWidget(self.clear_list)
+
+        h_layout.addWidget(self.show_reschd_matched_cards)
+        h_layout.addWidget(self.show_nonrschd_matched_cards)
+        h_layout.addWidget(self.show_unmatched_cards)
 
         v_layout.addWidget(self.vocabulary_text)
 
@@ -163,15 +182,17 @@ class TextEditor(QDialog):
                                                os.getenv('HOME'),
                                                'TXT(*.csv *.txt)'
                                                )
-        showInfo(filename)
+        # showInfo(filename)
         if filename:
             if filename != '':   # what does this do again?
                 with open(filename, 'w') as file:
+                # with open(filename, 'w', encoding='utf-8') as file:
 
                     # csvwriter = csv.writer(file, delimiter='\n', quotechar='|')
                     for line in self.list_of_vocabs:
-                        # showInfo(line)
-                        file.write(line)
+                        # line = line.decode('utf-8')
+                        # showInfo(line.encode('utf-8'))
+                        file.write(line.encode('utf-8'))
 
     # works!
     def import_csv(self, delimiter='\n'):
@@ -185,10 +206,13 @@ class TextEditor(QDialog):
 
         if filename:
             if filename != '':   # what does this do again?
-                with open(filename, 'r') as file:
+                # why the heck does Py 2.7 not have an encoding parameter????!!!!!!
+                # with open(filename, 'r') as file:
+                with codecs.open(filename, 'r', encoding='utf-8') as file:
 
-                    csvreader = csv.reader(file, delimiter=delimiter, quotechar='|')
-                    for line in csvreader:
+                    # csvreader = csv.reader(file, delimiter=delimiter, quotechar='|')
+                    for line in file:
+                        # line = line.decode('utf-8')
                         self.list_of_vocabs.append(line)
 
     def write_to_list(self):
@@ -210,6 +234,15 @@ class TextEditor(QDialog):
         # https://stackoverflow.com/questions/1400608/how-to-empty-a-list-in-python
         self.list_of_vocabs[:] = []
 
+    def show_rescheduled(self):
+        showInfo(str(self.matched_vocab))
+
+    def show_not_rescheduled(self):
+        showInfo(str(self.matchned_but_not_rescheduled))
+
+    def show_not_matched(self):
+        showInfo(str(self.unmatched_vocab))
+
     # MAIN
     def reschedule_cards(self):
         """
@@ -225,16 +258,23 @@ class TextEditor(QDialog):
         self.field_tomatch = 'Expression_Original_Unedited'
         self.selected_model = 'Japanese-1b811 example_sentences'
 
+        self.number_of_replacements = 0
+
         mid = mw.col.models.byName(self.selected_model)['id']
         nids = mw.col.findNotes('mid:' + str(mid))
 
+        ctr = 0
         for note_id in nids:
             note = mw.col.getNote(note_id)
             # field to match:
             # note[self.field_tomatch]
-            ctr = 0
-            if note[self.field_tomatch] in self.list_of_vocabs:
-                ctr += 1
+
+            list_of_vocabs = [i.encode('utf-8') for i in self.list_of_vocabs]
+            # note[self.field_tomatch] is unicode OK
+            showInfo(list_of_vocabs[1])
+            break
+            if note[self.field_tomatch] in list_of_vocabs:
+
                 # note is a dictionary containing all the fields
                 # Note that from common sense, the Notes themselves
                 # won't have due values because it is the cards that
@@ -244,9 +284,31 @@ class TextEditor(QDialog):
                 # cids = card IDs (if there is more than one card)
 
                 card = mw.col.getCard(first_card_id)
-                # reschedule card
-                card.due = ctr
 
+                # https://github.com/ankidroid/Anki-Android/wiki/Database-Structure
+                # 0=new, 1=learning, 2=due
+                # reschedule should be limited only to new cards, don't touch learning and due cards
+                if card.type == 0:
+                    # just for checking purposes, i.e. place the names of the rescheduled cards in a list
+                    self.matched_vocab.append(note[self.field_tomatch])
+                    # reschedule card
+                    card.due = ctr
+                    ctr += 1
+                    self.number_of_replacements += 1
+
+                    # not sure if this is needed (-1 = sync with ankiweb)
+                    card.usn = -1
+
+                    # TODO: TEMP ONLY, DELETE
+                    showInfo(card)
+                    # break
+
+                elif card.type != 0:
+                    # cards that weren't rescheduled because they're learning/mature
+                    self.unmatched_vocab.append(note[self.field_tomatch])
+
+        # pycharm can't detect reset
+        mw.reset()
         '''
         ------from anki/find.py------
                 def findCards(self, query, order=False):
