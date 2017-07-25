@@ -217,6 +217,10 @@ class TextEditor(QDialog):
     def import_csv(self, delimiter='\n'):
         # getOpenFileName (QWidget parent = None, QString caption = '',
         # QString directory = '', QString filter = '', Options options = 0)
+
+        # first, empty the list before importing
+        del self.list_of_vocabs[:]
+
         filename = QFileDialog.getOpenFileName(self,
                                                'Open CSV',
                                                os.getenv('HOME'),
@@ -229,6 +233,9 @@ class TextEditor(QDialog):
                 # with open(filename, 'r') as file:
                 with codecs.open(filename, 'r', encoding='utf-8') as file:
 
+                    # just did this because apparently the program doesn't resched the first vocab in the line
+                    # dunno why
+                    self.list_of_vocabs.append('\n')
                     # csvreader = csv.reader(file, delimiter=delimiter, quotechar='|')
                     for line in file:
                         # line = line.decode('utf-8')
@@ -276,6 +283,9 @@ class TextEditor(QDialog):
     # NOTE: this seems to be slower than my original function
     # might need to recode this
     # TODO: I might recode this to use executemany instead, I doubt that'll speed things up though
+
+    # FIXME: (VERY IMPORTANT!!!) it appears that the first vocab on the list is not rescheduled (wheter suspended or not)
+    # it appears that the fix is simply to add a newline at the beginning of the list
     def reschedule_cards_alternate(self):
         """
         Main function of the program
@@ -335,7 +345,7 @@ class TextEditor(QDialog):
                 #     break
                 # ===== TEMP ==== #
 
-                showInfo(_fromUtf8(vocab))
+                # showInfo(_fromUtf8(vocab))
                 nid = dict_of_note_first_fields[_fromUtf8(vocab.strip())]
 
                 cids = mw.col.findCards('nid:' + str(nid))
@@ -367,10 +377,9 @@ class TextEditor(QDialog):
                                         ''', ctr, int(time.time()), int(first_card_id)
                                       )
 
-                # FIXME: doesn't unsuspend suspended cards
                 # Same as type, but -1=suspended, -2=user buried, -3=sched buried
-                if card.queue == 0 or card.queue == -1 or card.queue == -2 or card.queue == -3:
-                    showInfo(_fromUtf8(vocab))
+                if card.queue == -1 or card.queue == -2 or card.queue == -3:
+                    # showInfo(_fromUtf8(vocab))
                     self.matched_vocab.append(vocab)
                     ctr += 1
                     self.number_of_replacements += 1
@@ -398,8 +407,8 @@ class TextEditor(QDialog):
 
                 # NOTE: Limit the number of reschedules to 100 for now
                 # break when the number of replacements is the same as the list length
-                # if ctr == len(list_of_vocabs) + 1:
-                if ctr == 100:
+                if ctr == len(list_of_vocabs) + 1:
+                # if ctr == 100:
                     break
 
             else:
