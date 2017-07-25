@@ -15,6 +15,13 @@ from aqt.utils import showInfo      # TODO: temporary import
 import os
 import codecs
 import time
+from PyQt4 import QtCore
+
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    def _fromUtf8(s):
+        return s
 
 # from PyQt5.QtWidgets import *       # TODO: temporary import    =======
 # from PyQt5.QtGui import *           # TODO: temporary import    =======
@@ -80,16 +87,17 @@ name_of_deck = ''
 class TextEditor(QDialog):
     # mw is passed as parent
     def __init__(self, parent):
-        '''
+        """
         Initialize the UI
-        :param parent:
-        '''
+        :param parent:      global mw from aqt
+        """
 
         # QDialog args from http://pyqt.sourceforge.net/Docs/PyQt4/qdialog.html#QDialog
         # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
         super(TextEditor, self).__init__(parent)
 
         self.list_of_vocabs = []                                # list of mined vocab
+        self.list_of_deck_vocabs_20k = []
 
         self.matched_vocab = []                                 # matched and rescheduled
         self.matchned_but_not_rescheduled = []
@@ -99,7 +107,7 @@ class TextEditor(QDialog):
         self.selected_model = ''                                # TODO: to be filled in by a signal
         self.field_tomatch = ''                                 # TODO: to be filled in by a signal
 
-        self.vocabulary_text = QTextEdit(self)                  # QTextEdit 1st arg = parent
+        self.vocabulary_text = QPlainTextEdit(self)                  # QTextEdit 1st arg = parent
 
         # ===================== BUTTONS ===================== #
         self.clr_btn = QPushButton('Clear Text')                # works
@@ -115,11 +123,12 @@ class TextEditor(QDialog):
 
         # FIXME: temp button
         self.show_contents = QPushButton('Show Contents')
+        self.write_deck_vocabs20k_to_CSV = QPushButton('Write Deck Vocabs to CSV')
 
         # ===================== SIGNALS ===================== #
-        self.write_to_list_btn.clicked.connect(self.write_to_list)
-        self.resched_btn.clicked.connect(self.reschedule_cards)
-        self.clr_btn.clicked.connect(self.clear_text)
+        # self.write_to_list_btn.clicked.connect(self.write_to_list)
+        self.resched_btn.clicked.connect(self.reschedule_cards_alternate)
+        # self.clr_btn.clicked.connect(self.clear_text)
         self.write_to_txt_btn.clicked.connect(self.csv_write)
         # TODO: add an additional LineEdit box where I can input what the delimiter will be
         self.import_btn.clicked.connect(lambda: self.import_csv(delimiter='\n'))
@@ -132,10 +141,30 @@ class TextEditor(QDialog):
 
         self.vocabulary_text.textChanged.connect(self.value_changed)
 
+        # TODO: TEMP BUTTON
+        self.write_deck_vocabs20k_to_CSV.clicked.connect(self.write_deck_vocab_to_csv_method)
+
         # setWindowTitle is probably a super method from QtGui
         self.setWindowTitle('Push')
 
         self.init_ui()
+
+    # FIXME: TEMPORARY
+    def write_deck_vocab_to_csv_method(self):
+        filename = QFileDialog.getSaveFileName(self,
+                                               'Save CSV',
+                                               os.getenv('HOME'),
+                                               'TXT(*.txt)'
+                                               )
+        if filename:
+            if filename != '':
+                with open(filename, 'w') as file:
+
+                    for _iter, line in enumerate(self.list_of_deck_vocabs_20k):
+                        file.write(line.encode('utf-8'))
+                        showInfo(_fromUtf8(line))
+                        if _iter == 1:
+                            break
 
     def init_ui(self):
         v_layout = QVBoxLayout()
@@ -155,6 +184,8 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.show_nonrschd_matched_cards)
         h_layout.addWidget(self.show_unmatched_cards)
 
+        h_layout.addWidget(self.write_deck_vocabs20k_to_CSV)
+
         v_layout.addWidget(self.vocabulary_text)
 
         v_layout.addLayout(h_layout)
@@ -171,16 +202,18 @@ class TextEditor(QDialog):
         self.list_of_vocabs[:] = []    # empty it before filling it again
 
         for line in self.vocabulary_text.toPlainText():
+        # for line in self.vocabulary_text.text():
+
             self.list_of_vocabs.append(line)
 
     # temporary
     # only created this so that I'd see what the contents are
-    # FIXME: works but the file is empty
+    # works!
     def csv_write(self):
         filename = QFileDialog.getSaveFileName(self,
                                                'Save CSV',
                                                os.getenv('HOME'),
-                                               'TXT(*.csv *.txt)'
+                                               'TXT(*.txt)'
                                                )
         # showInfo(filename)
         if filename:
@@ -215,14 +248,20 @@ class TextEditor(QDialog):
                         # line = line.decode('utf-8')
                         self.list_of_vocabs.append(line)
 
+    # obsolete!?
     def write_to_list(self):
+        self.list_of_vocabs[:] = []
+
         for line in self.vocabulary_text.toPlainText():
             self.list_of_vocabs.append(line)
 
     #
     def show_contents_signal(self):
         # showInfo(str(len(self.list_of_vocabs)))
-        showInfo(str(self.list_of_vocabs))
+        # showInfo(str(self.list_of_vocabs))
+        for vocab in self.list_of_vocabs:
+            showInfo(_fromUtf8(vocab))
+
 
     # works
     def clear_text(self):
@@ -235,13 +274,105 @@ class TextEditor(QDialog):
         self.list_of_vocabs[:] = []
 
     def show_rescheduled(self):
-        showInfo(str(self.matched_vocab))
+        # showInfo(str(self.matched_vocab))
+        for matched in self.matched_vocab:
+            showInfo(_fromUtf8(matched))
+
 
     def show_not_rescheduled(self):
-        showInfo(str(self.matchned_but_not_rescheduled))
+        # showInfo(str(self.matchned_but_not_rescheduled))
+        for matched_but_not_res in self.matchned_but_not_rescheduled:
+            showInfo(_fromUtf8(matched_but_not_res))
 
     def show_not_matched(self):
-        showInfo(str(self.unmatched_vocab))
+        # showInfo(str(self.unmatched_vocab))
+        for unmatched in self.unmatched_vocab:
+            showInfo(_fromUtf8(unmatched))
+
+    def reschedule_cards_alternate(self):
+        """
+        Main function of the program
+        Checks every Note > Field if it is inside the
+        list of mined words and sets the due date to zero accdngly
+        :return:    None
+        """
+
+        self.field_tomatch = 'Expression_Original_Unedited'
+        self.selected_model = 'Japanese-1b811 example_sentences'
+
+        self.number_of_replacements = 0
+
+        mid = mw.col.models.byName(self.selected_model)['id']
+        nids = mw.col.findNotes('mid:' + str(mid))      # returns a list of noteIds
+
+        ctr = 0
+
+        # list comprehension of tuples in format: nid, first field for that nid (reversed)
+        dict_of_note_first_fields = {mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>') : mw.col.getNote(note_id)
+                                     for note_id in nids}
+        self.list_of_deck_vocabs_20k = dict_of_note_first_fields.keys()
+        list_of_vocabs = [_fromUtf8(vocab) for vocab in self.list_of_vocabs]
+
+        for vocab in list_of_vocabs:
+            if vocab.strip() in self.list_of_deck_vocabs_20k:
+                nid = dict_of_note_first_fields[_fromUtf8(vocab.strip())]
+
+                cids = mw.col.findCards('nid:' + str(nid))
+
+                try:
+                    first_card_id = cids[0]
+                except IndexError:
+                    first_card_id = cids
+
+                card = mw.col.getCard(first_card_id)
+
+                if card.type == 0:
+                    self.matched_vocab.append(vocab)
+                    # card.due = 0
+                    ctr += 1
+                    self.number_of_replacements += 1
+
+                    mw.col.db.execute(''' UPDATE cards
+                                            SET due = ?,
+                                                mod = ?,
+                                                usn = -1
+                                            WHERE
+                                                id = ?
+                                                    AND
+                                                type = 0
+                                        ''', ctr, str(int(time.time())), int(first_card_id)
+                                      )
+
+                elif card.queue == -1:
+                    self.matched_vocab.append(vocab)
+                    # card.due = 0
+                    ctr += 1
+                    self.number_of_replacements += 1
+
+                    mw.col.db.execute(''' UPDATE cards
+                                            SET due = ?,
+                                                mod = ?,
+                                                usn = -1,
+                                                type = 0
+                                            WHERE
+                                                id = ?
+                                                    AND
+                                                type = 0
+                                        ''', ctr, str(int(time.time())), int(first_card_id)
+                                      )
+
+                elif card.queue != -1:
+                    self.matchned_but_not_rescheduled.append(vocab)
+
+                elif card.type != 0:
+                    # cards that weren't rescheduled because they're learning/mature
+                    self.matchned_but_not_rescheduled.append(vocab)
+
+            else:
+                self.unmatched_vocab.append(vocab)
+
+        mw.reset()
+
 
     # MAIN
     def reschedule_cards(self):
@@ -254,6 +385,10 @@ class TextEditor(QDialog):
         # did = mw.col.decks.id("")
         # print(dir(mw.col.decks.id("")))
         # deck = mw.col.decks.byName("")
+
+        # FIXME: recode this entire function such that you only check for
+        # each vocab if they are in the collection
+        # i.e. for vocab in list of vocabs
 
         self.field_tomatch = 'Expression_Original_Unedited'
         self.selected_model = 'Japanese-1b811 example_sentences'
@@ -269,10 +404,14 @@ class TextEditor(QDialog):
             # field to match:
             # note[self.field_tomatch]
 
-            list_of_vocabs = [i.encode('utf-8') for i in self.list_of_vocabs]
+            # list_of_vocabs = [i.encode('utf-8') for i in self.list_of_vocabs]
+            list_of_vocabs = [_fromUtf8(vocab) for vocab in self.list_of_vocabs]
+
             # note[self.field_tomatch] is unicode OK
-            showInfo(list_of_vocabs[1])
-            break
+
+            # if unicode(note[self.field_tomatch], 'utf-8') in list_of_vocabs:
+            # note_first_field = note[self.field_tomatch]
+
             if note[self.field_tomatch] in list_of_vocabs:
 
                 # note is a dictionary containing all the fields
@@ -292,20 +431,54 @@ class TextEditor(QDialog):
                     # just for checking purposes, i.e. place the names of the rescheduled cards in a list
                     self.matched_vocab.append(note[self.field_tomatch])
                     # reschedule card
-                    card.due = ctr
+                    card.due = 0
                     ctr += 1
                     self.number_of_replacements += 1
 
-                    # not sure if this is needed (-1 = sync with ankiweb)
-                    card.usn = -1
+                    mw.col.db.execute(  ''' UPDATE cards
+                                            SET due = ?,
+                                                mod = ?,
+                                                usn = -1
+                                            WHERE
+                                                id = ? AND
+                                                type = 0
+                                        ''', ctr, time.time(), first_card_id
+                                        )
 
-                    # TODO: TEMP ONLY, DELETE
-                    showInfo(card)
-                    # break
+                    '''
+                    IMPORTANT NOTE TO SELF:
+                    doing things like card.due = 0 doesn't work because
+                    It doesn't tap into the database
+                    '''
+
+                elif card.queue == -1:
+                    # just for checking purposes, i.e. place the names of the rescheduled cards in a list
+                    self.matched_vocab.append(note[self.field_tomatch])
+                    # reschedule card
+                    card.due = 0
+                    ctr += 1
+                    self.number_of_replacements += 1
+
+                    mw.col.db.execute(  ''' UPDATE cards
+                                            SET due = ?,
+                                                mod = ?,
+                                                usn = -1
+                                                type = 0
+                                            WHERE
+                                                id = ? AND
+                                                type = 0
+                                        ''', ctr, time.time(), first_card_id
+                                        )
+                elif card.queue != -1:
+                    self.matchned_but_not_rescheduled.append(note[self.field_tomatch])
 
                 elif card.type != 0:
                     # cards that weren't rescheduled because they're learning/mature
-                    self.unmatched_vocab.append(note[self.field_tomatch])
+                    self.matchned_but_not_rescheduled.append(note[self.field_tomatch])
+
+            # else:
+                # FIXME: this adds the wrong vocab (every vocab from the 20k+ vocab
+                # self.unmatched_vocab.append(note[self.field_tomatch])
 
         # pycharm can't detect reset
         mw.reset()
