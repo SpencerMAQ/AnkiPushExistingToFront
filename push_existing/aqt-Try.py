@@ -17,6 +17,7 @@ import codecs
 import time
 from PyQt4 import QtCore
 
+# Credits to Alex Yatskov (foosoft)
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -289,6 +290,8 @@ class TextEditor(QDialog):
         for unmatched in self.unmatched_vocab:
             showInfo(_fromUtf8(unmatched))
 
+    # NOTE: this seems to be slower than my original function
+    # might need to recode this
     def reschedule_cards_alternate(self):
         """
         Main function of the program
@@ -308,14 +311,18 @@ class TextEditor(QDialog):
         ctr = 0
 
         # list comprehension of tuples in format: nid, first field for that nid (reversed)
-        dict_of_note_first_fields = {mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>') : mw.col.getNote(note_id)
+        dict_of_note_first_fields = {mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>') :
+                                    note_id
                                      for note_id in nids}
+
         self.list_of_deck_vocabs_20k = dict_of_note_first_fields.keys()
         list_of_vocabs = [_fromUtf8(vocab) for vocab in self.list_of_vocabs]
 
         for vocab in list_of_vocabs:
             if vocab.strip() in self.list_of_deck_vocabs_20k:
+                showInfo(_fromUtf8(vocab))
                 nid = dict_of_note_first_fields[_fromUtf8(vocab.strip())]
+                # showInfo(str(nid))
 
                 cids = mw.col.findCards('nid:' + str(nid))
 
@@ -323,6 +330,8 @@ class TextEditor(QDialog):
                     first_card_id = cids[0]
                 except IndexError:
                     first_card_id = cids
+
+                    # showInfo(str(first_card_id))
 
                 card = mw.col.getCard(first_card_id)
 
@@ -340,7 +349,7 @@ class TextEditor(QDialog):
                                                 id = ?
                                                     AND
                                                 type = 0
-                                        ''', ctr, str(int(time.time())), int(first_card_id)
+                                        ''', ctr, int(time.time()), int(first_card_id)
                                       )
 
                 elif card.queue == -1:
@@ -358,7 +367,7 @@ class TextEditor(QDialog):
                                                 id = ?
                                                     AND
                                                 type = 0
-                                        ''', ctr, str(int(time.time())), int(first_card_id)
+                                        ''', ctr, int(time.time()), int(first_card_id)
                                       )
 
                 elif card.queue != -1:
@@ -375,119 +384,119 @@ class TextEditor(QDialog):
 
 
     # MAIN
-    def reschedule_cards(self):
-        """
-        Main function of the program
-        Checks every Note > Field if it is inside the
-        list of mined words and sets the due date to zero accdngly
-        :return:    None
-        """
-        # did = mw.col.decks.id("")
-        # print(dir(mw.col.decks.id("")))
-        # deck = mw.col.decks.byName("")
-
-        # FIXME: recode this entire function such that you only check for
-        # each vocab if they are in the collection
-        # i.e. for vocab in list of vocabs
-
-        self.field_tomatch = 'Expression_Original_Unedited'
-        self.selected_model = 'Japanese-1b811 example_sentences'
-
-        self.number_of_replacements = 0
-
-        mid = mw.col.models.byName(self.selected_model)['id']
-        nids = mw.col.findNotes('mid:' + str(mid))
-
-        ctr = 0
-        for note_id in nids:
-            note = mw.col.getNote(note_id)
-            # field to match:
-            # note[self.field_tomatch]
-
-            # list_of_vocabs = [i.encode('utf-8') for i in self.list_of_vocabs]
-            list_of_vocabs = [_fromUtf8(vocab) for vocab in self.list_of_vocabs]
-
-            # note[self.field_tomatch] is unicode OK
-
-            # if unicode(note[self.field_tomatch], 'utf-8') in list_of_vocabs:
-            # note_first_field = note[self.field_tomatch]
-
-            if note[self.field_tomatch] in list_of_vocabs:
-
-                # note is a dictionary containing all the fields
-                # Note that from common sense, the Notes themselves
-                # won't have due values because it is the cards that
-                # are supposed to be studied
-                cids = mw.col.findCards('nid:' + str(note_id))
-                first_card_id = cids[0]
-                # cids = card IDs (if there is more than one card)
-
-                card = mw.col.getCard(first_card_id)
-
-                # https://github.com/ankidroid/Anki-Android/wiki/Database-Structure
-                # 0=new, 1=learning, 2=due
-                # reschedule should be limited only to new cards, don't touch learning and due cards
-                if card.type == 0:
-                    # just for checking purposes, i.e. place the names of the rescheduled cards in a list
-                    self.matched_vocab.append(note[self.field_tomatch])
-                    # reschedule card
-                    card.due = 0
-                    ctr += 1
-                    self.number_of_replacements += 1
-
-                    mw.col.db.execute(  ''' UPDATE cards
-                                            SET due = ?,
-                                                mod = ?,
-                                                usn = -1
-                                            WHERE
-                                                id = ? AND
-                                                type = 0
-                                        ''', ctr, time.time(), first_card_id
-                                        )
-
-                    '''
-                    IMPORTANT NOTE TO SELF:
-                    doing things like card.due = 0 doesn't work because
-                    It doesn't tap into the database
-                    '''
-
-                elif card.queue == -1:
-                    # just for checking purposes, i.e. place the names of the rescheduled cards in a list
-                    self.matched_vocab.append(note[self.field_tomatch])
-                    # reschedule card
-                    card.due = 0
-                    ctr += 1
-                    self.number_of_replacements += 1
-
-                    mw.col.db.execute(  ''' UPDATE cards
-                                            SET due = ?,
-                                                mod = ?,
-                                                usn = -1
-                                                type = 0
-                                            WHERE
-                                                id = ? AND
-                                                type = 0
-                                        ''', ctr, time.time(), first_card_id
-                                        )
-                elif card.queue != -1:
-                    self.matchned_but_not_rescheduled.append(note[self.field_tomatch])
-
-                elif card.type != 0:
-                    # cards that weren't rescheduled because they're learning/mature
-                    self.matchned_but_not_rescheduled.append(note[self.field_tomatch])
-
-            # else:
-                # FIXME: this adds the wrong vocab (every vocab from the 20k+ vocab
-                # self.unmatched_vocab.append(note[self.field_tomatch])
-
-        # pycharm can't detect reset
-        mw.reset()
-        '''
-        ------from anki/find.py------
-                def findCards(self, query, order=False):
-                    "Return a list of card ids for QUERY."
-
-        '''
+    # def reschedule_cards(self):
+    #     """
+    #     Main function of the program
+    #     Checks every Note > Field if it is inside the
+    #     list of mined words and sets the due date to zero accdngly
+    #     :return:    None
+    #     """
+    #     # did = mw.col.decks.id("")
+    #     # print(dir(mw.col.decks.id("")))
+    #     # deck = mw.col.decks.byName("")
+    #
+    #     # FIXME: recode this entire function such that you only check for
+    #     # each vocab if they are in the collection
+    #     # i.e. for vocab in list of vocabs
+    #
+    #     self.field_tomatch = 'Expression_Original_Unedited'
+    #     self.selected_model = 'Japanese-1b811 example_sentences'
+    #
+    #     self.number_of_replacements = 0
+    #
+    #     mid = mw.col.models.byName(self.selected_model)['id']
+    #     nids = mw.col.findNotes('mid:' + str(mid))
+    #
+    #     ctr = 0
+    #     for note_id in nids:
+    #         note = mw.col.getNote(note_id)
+    #         # field to match:
+    #         # note[self.field_tomatch]
+    #
+    #         # list_of_vocabs = [i.encode('utf-8') for i in self.list_of_vocabs]
+    #         list_of_vocabs = [_fromUtf8(vocab) for vocab in self.list_of_vocabs]
+    #
+    #         # note[self.field_tomatch] is unicode OK
+    #
+    #         # if unicode(note[self.field_tomatch], 'utf-8') in list_of_vocabs:
+    #         # note_first_field = note[self.field_tomatch]
+    #
+    #         if note[self.field_tomatch] in list_of_vocabs:
+    #
+    #             # note is a dictionary containing all the fields
+    #             # Note that from common sense, the Notes themselves
+    #             # won't have due values because it is the cards that
+    #             # are supposed to be studied
+    #             cids = mw.col.findCards('nid:' + str(note_id))
+    #             first_card_id = cids[0]
+    #             # cids = card IDs (if there is more than one card)
+    #
+    #             card = mw.col.getCard(first_card_id)
+    #
+    #             # https://github.com/ankidroid/Anki-Android/wiki/Database-Structure
+    #             # 0=new, 1=learning, 2=due
+    #             # reschedule should be limited only to new cards, don't touch learning and due cards
+    #             if card.type == 0:
+    #                 # just for checking purposes, i.e. place the names of the rescheduled cards in a list
+    #                 self.matched_vocab.append(note[self.field_tomatch])
+    #                 # reschedule card
+    #                 card.due = 0
+    #                 ctr += 1
+    #                 self.number_of_replacements += 1
+    #
+    #                 mw.col.db.execute(  ''' UPDATE cards
+    #                                         SET due = ?,
+    #                                             mod = ?,
+    #                                             usn = -1
+    #                                         WHERE
+    #                                             id = ? AND
+    #                                             type = 0
+    #                                     ''', ctr, time.time(), first_card_id
+    #                                     )
+    #
+    #                 '''
+    #                 IMPORTANT NOTE TO SELF:
+    #                 doing things like card.due = 0 doesn't work because
+    #                 It doesn't tap into the database
+    #                 '''
+    #
+    #             elif card.queue == -1:
+    #                 # just for checking purposes, i.e. place the names of the rescheduled cards in a list
+    #                 self.matched_vocab.append(note[self.field_tomatch])
+    #                 # reschedule card
+    #                 card.due = 0
+    #                 ctr += 1
+    #                 self.number_of_replacements += 1
+    #
+    #                 mw.col.db.execute(  ''' UPDATE cards
+    #                                         SET due = ?,
+    #                                             mod = ?,
+    #                                             usn = -1
+    #                                             type = 0
+    #                                         WHERE
+    #                                             id = ? AND
+    #                                             type = 0
+    #                                     ''', ctr, time.time(), first_card_id
+    #                                     )
+    #             elif card.queue != -1:
+    #                 self.matchned_but_not_rescheduled.append(note[self.field_tomatch])
+    #
+    #             elif card.type != 0:
+    #                 # cards that weren't rescheduled because they're learning/mature
+    #                 self.matchned_but_not_rescheduled.append(note[self.field_tomatch])
+    #
+    #         # else:
+    #             # FIXME: this adds the wrong vocab (every vocab from the 20k+ vocab
+    #             # self.unmatched_vocab.append(note[self.field_tomatch])
+    #
+    #     # pycharm can't detect reset
+    #     mw.reset()
+    #     '''
+    #     ------from anki/find.py------
+    #             def findCards(self, query, order=False):
+    #                 "Return a list of card ids for QUERY."
+    #
+    #     '''
 
 
 def init_window():
