@@ -28,6 +28,7 @@ __version__ = '0.0'
 # July 26 2017
 
 HOTKEY = 'Shift+P'
+TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab_add-on_for_Anki'
 
 # ===================== TEMPORARY STUFF ===================== #
 # just so I can get the namespaces inside  Collection
@@ -44,12 +45,6 @@ if False:
             self.col = Collection('', log=True)
 
     mw = Temporary()
-
-    mw.col.sched.unsuspendCards()
-    # reposition
-    # def sortCards(self, cids, start=1, step=1, shuffle=False, shift=False):
-    mw.col.sched.sortCards()
-
 # ===================== TEMPORARY STUFF ===================== #
 
 #  ===================== TO_DO_LIST ===================== #
@@ -60,15 +55,20 @@ if False:
 # TODO: maybe this'd work better if you did by note type instead of deck? (or maybe both)
 # TODO: display the vocabs that were found (and total number)
 # TODO: display the vocabs that were NOT found (and total number)
-# TODO: add functionality to tag the cards that were moved by adding tag: movedByPushToFrontPlugin
+
+# TODO: (IMPORTANT) add functionality to tag the cards that were moved by adding tag: movedByPushToFrontPlugin
+
 # TODO: drop-down menu of decks and note types
 # TODO: drop-down menu of delimiter
+# TODO: Make this app use a QMainWindow by creating a new QApplication instance
 
 # TODO: include functionaly for user to push only CERTAIN CARDS, not entire notes (DONE!)
 
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 
 # TODO: (VERY IMPORTANT) Include a log file of the replacements done, number of replacements, what were not replaced, etc.
+
+# FIXME: The CSV File needs a placeholder as the first line
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -94,7 +94,9 @@ class TextEditor(QDialog):
         self.field_tomatch = ''                                 # TODO: to be filled in by a signal
         self.selected_model = ''                                # TODO: to be filled in by a signal
         self.number_of_cards_to_resched_per_note = 1
+        self.number_of_notes_in_deck = 0
 
+        # FIXME: Not needed at all
         self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
 
         # setWindowTitle is probably a super method from QtGui
@@ -108,26 +110,27 @@ class TextEditor(QDialog):
         # ===================== PERMANENT ===================== #
         self.import_btn = QPushButton('Import CSV')
         self.clear_list = QPushButton('Clear List')
-        self.resched_btn = QPushButton('Reschedule')
-        self.write_to_txt_btn = QPushButton('Write to CSV')
+        self.anki_based_reschedule_button = QPushButton('Anki-Based Resched')
 
         self.show_contents = QPushButton('Show Contents')
+
+        # ===================== TEMPORARY ===================== #
+        # self.resched_btn = QPushButton('Reschedule')
+        # self.clr_btn = QPushButton('Clear Text')  # works
+        # self.write_to_txt_btn = QPushButton('Write to CSV')
+        # self.write_to_list_btn = QPushButton('Write to List') # FIXME: Probably unnecessary
+
+        # ===================== TO BE TRANSFERRED TO LOGGING ===================== #
         self.show_unmatched_cards = QPushButton('Cards without any matches')
         self.show_reschd_matched_cards = QPushButton('Show Rescheduled Matches')
         self.show_nonrschd_matched_cards = QPushButton('Show Matched but not Reschedued')
 
-        # ===================== TEMPORARY ===================== #
-        self.clr_btn = QPushButton('Clear Text')  # works
-        # self.write_to_list_btn = QPushButton('Write to List') # FIXME: Probably unnecessary
-        self.anki_based_reschedule_button = QPushButton('Anki-Based Resched')
-
     def init_signals(self):
         # ===================== PERMANENT ===================== #
         self.clear_list.clicked.connect(self.reset_list)
-        self.write_to_txt_btn.clicked.connect(self.csv_write)
         self.show_contents.clicked.connect(self.show_contents_signal)
-        self.resched_btn.clicked.connect(self.reschedule_cards_alternate)
         self.import_btn.clicked.connect(lambda: self.import_csv(delimiter='\n'))
+        self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
         # TODO: add an additional LineEdit(or combobox) box where I can input what the delimiter will be
 
         self.show_unmatched_cards.clicked.connect(self.show_not_matched)
@@ -136,9 +139,10 @@ class TextEditor(QDialog):
 
         # ===================== TEMPORARY ===================== #
         # self.clr_btn.clicked.connect(self.clear_text)
-        self.vocabulary_text.textChanged.connect(self.value_changed)
+        # self.vocabulary_text.textChanged.connect(self.value_changed)
         # self.write_to_list_btn.clicked.connect(self.write_to_list)
-        self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
+        # self.write_to_txt_btn.clicked.connect(self.csv_write)
+        # self.resched_btn.clicked.connect(self.reschedule_cards_alternate)
 
     def init_ui(self):
         v_layout = QVBoxLayout()
@@ -148,19 +152,18 @@ class TextEditor(QDialog):
         # ===================== PERMANENT ===================== #
         h_layout.addWidget(self.import_btn)
         h_layout.addWidget(self.clear_list)
-        h_layout.addWidget(self.resched_btn)
         h_layout.addWidget(self.show_contents)
-        h_layout.addWidget(self.write_to_txt_btn)                   # CSV Write
+        h_layout.addWidget(self.anki_based_reschedule_button)
 
         h_layout.addWidget(self.show_unmatched_cards)
         h_layout.addWidget(self.show_reschd_matched_cards)
         h_layout.addWidget(self.show_nonrschd_matched_cards)
 
-
         # ===================== TEMPORARY ===================== #
-        h_layout.addWidget(self.clr_btn)
+        # h_layout.addWidget(self.clr_btn)
+        # h_layout.addWidget(self.resched_btn)
+        # h_layout.addWidget(self.write_to_txt_btn)                   # CSV Write
         # h_layout.addWidget(self.write_to_list_btn)                # FIXME: Temp
-        h_layout.addWidget(self.anki_based_reschedule_button)
 
         # ===================== PERMANENT (V-Layout) ===================== #
         v_layout.addWidget(self.vocabulary_text)
@@ -170,28 +173,28 @@ class TextEditor(QDialog):
         self.setLayout(v_layout)
         self.show()
 
-    # FIXME: doesn't fucking work
-    def value_changed(self):
-        self.list_of_vocabs[:] = []
-
-        for line in self.vocabulary_text.toPlainText():
-            self.list_of_vocabs.append(line)
+    # # FIXME: doesn't fucking work
+    # def value_changed(self):
+    #     self.list_of_vocabs[:] = []
+    #
+    #     for line in self.vocabulary_text.toPlainText():
+    #         self.list_of_vocabs.append(line)
 
     # temporary, only created this so that I'd see what the contents are
-    def csv_write(self):
-        filename = QFileDialog.getSaveFileName(self,
-                                               'Save CSV',
-                                               os.getenv('HOME'),
-                                               'TXT(*.txt)'
-                                               )
-
-        if filename:
-            with open(filename, 'w') as file:
-            # with open(filename, 'w', encoding='utf-8') as file:
-
-                # csvwriter = csv.writer(file, delimiter='\n', quotechar='|')
-                for line in self.list_of_vocabs:
-                    file.write(line.encode('utf-8'))
+    # def csv_write(self):
+    #     filename = QFileDialog.getSaveFileName(self,
+    #                                            'Save CSV',
+    #                                            os.getenv('HOME'),
+    #                                            'TXT(*.txt)'
+    #                                            )
+    #
+    #     if filename:
+    #         with open(filename, 'w') as file:
+    #         # with open(filename, 'w', encoding='utf-8') as file:
+    #
+    #             # csvwriter = csv.writer(file, delimiter='\n', quotechar='|')
+    #             for line in self.list_of_vocabs:
+    #                 file.write(line.encode('utf-8'))
 
     # TODO: Combobox for delimiter
     # TODO: use csv writer so I can specify the delimiter
@@ -210,22 +213,46 @@ class TextEditor(QDialog):
             with codecs.open(filename, 'r', encoding='utf-8') as file:
 
                 # program doesn't resched the first vocab in the line
-                self.list_of_vocabs.append('placeholder')
                 # csvreader = csv.reader(file, delimiter=delimiter, quotechar='|')
                 for line in file:
                     # line = line.decode('utf-8')
                     self.list_of_vocabs.append(line)
 
-    def show_contents_signal(self):
-        for vocab in self.list_of_vocabs:
-            showInfo(_from_utf8(vocab))
+        # -1 because of necessary placeholder first line
+        if self.list_of_vocabs:
+            showInfo('Successfully Imported {} lines from CSV'.format(len(self.list_of_vocabs)-1))
+        else:
+            showInfo('Nothing Imported')
 
-    def clear_text(self):
-        self.vocabulary_text.clear()
-        self.vocabulary_text.setText('')
+    def show_contents_signal(self):
+        # FiXME: Should show the entire table, not one by one
+        list_of_vocabs = self.list_of_vocabs
+
+        if not list_of_vocabs:
+            showInfo('The list is empty')
+
+        # FiXME: doesn't remove placeholder from the list, probably because of unicode
+        try:
+            list_of_vocabs.remove('placeholder')
+        except ValueError:
+            pass
+
+        try:
+            showInfo(_from_utf8(*list_of_vocabs))
+        except:
+            for vocab in list_of_vocabs:
+                showInfo(_from_utf8(vocab))
+            # raise
+
+    # def clear_text(self):
+    #     self.vocabulary_text.clear()
+    #     self.vocabulary_text.setText('')
 
     def reset_list(self):
         self.list_of_vocabs[:] = []
+
+        showInfo('Succesfully reset the list of cards\n'
+                 'Please import a text file to fill the list again')
 
     def show_rescheduled(self):
         for matched in self.matched_vocab:
@@ -255,6 +282,7 @@ class TextEditor(QDialog):
 
         :return:    None
         """
+        # FIXME: Temp, will replace with combobox
         self.field_tomatch = 'Expression_Original_Unedited'
         self.selected_model = 'Japanese-1b811 example_sentences'
 
@@ -264,19 +292,33 @@ class TextEditor(QDialog):
         nids = mw.col.findNotes('mid:' + str(mid))                  # returns a list of noteIds
         ctr = 0
 
+        list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs if vocab != u'placeholder']
+
+        if not list_of_vocabs:
+            showInfo('The List is empty\n'
+                     'Please Import a File before clicking this button')
+            return
+
         dict_of_note_first_fields = {
-        mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>'):
-            note_id
-        for note_id in nids}
+            mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>'):
+                note_id
+            for note_id in nids
+            }
 
         list_of_deck_vocabs_20k = dict_of_note_first_fields.keys()
-        list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs]
+
+        if not list_of_deck_vocabs_20k:
+            showInfo('The model {} contains no notes\n'
+                     'Please try a new note type'.format(self.selected_model))
+            return
+
+        self.number_of_notes_in_deck = len(list_of_deck_vocabs_20k)
 
         for vocab in list_of_vocabs:
             if vocab.strip() in list_of_deck_vocabs_20k and vocab != 'placeholder':
                 nid = dict_of_note_first_fields[_from_utf8(vocab.strip())]
                 cids = mw.col.findCards('nid:' + str(nid))
-                
+
                 # num of cards to resched per note (default = 1)
                 number_of_cards_to_resched_ctr = 0
                 for card_id in cids:
@@ -305,6 +347,13 @@ class TextEditor(QDialog):
                 self.unmatched_vocab.append(vocab)
 
         mw.reset()
+        showInfo('Successfully Rescheduled {} cards'.format(self.number_of_replacements))
+
+        if self.matchned_but_not_rescheduled:
+            showInfo('Did not reschedule {} cards because they were either learning or due cards'
+                     .format(len(self.matchned_but_not_rescheduled)))
+        if self.unmatched_vocab:
+            showInfo('Unable to find {} cards'.format(len(self.unmatched_vocab)))
 
     def reschedule_cards_alternate(self):
         """
@@ -338,6 +387,8 @@ class TextEditor(QDialog):
 
         list_of_deck_vocabs_20k = dict_of_note_first_fields.keys()
         list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs]
+
+        self.number_of_notes_in_deck = len(list_of_deck_vocabs_20k)
 
         for vocab in list_of_vocabs:
             if vocab.strip() in list_of_deck_vocabs_20k and vocab != 'placeholder':
@@ -386,6 +437,7 @@ class TextEditor(QDialog):
                 self.unmatched_vocab.append(vocab)
 
         mw.reset()
+        showInfo('Successfully Rescheduled {} cards'.format(self.number_of_replacements))
 
 
 def init_window():
