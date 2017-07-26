@@ -63,7 +63,6 @@ if False:
 # TODO: add functionality to tag the cards that were moved by adding tag: movedByPushToFrontPlugin
 # TODO: drop-down menu of decks and note types
 # TODO: drop-down menu of delimiter
-# TODO: Anki-base reschedule (https://github.com/dae/anki/blob/master/anki/sched.py)
 
 # TODO: include functionaly for user to push only CERTAIN CARDS, not entire notes (DONE!)
 
@@ -94,6 +93,7 @@ class TextEditor(QDialog):
         self.selected_deck = ''                                 # TODO: to be filled in by a signal
         self.field_tomatch = ''                                 # TODO: to be filled in by a signal
         self.selected_model = ''                                # TODO: to be filled in by a signal
+        self.number_of_cards_to_resched_per_note = 1
 
         self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
 
@@ -276,24 +276,27 @@ class TextEditor(QDialog):
             if vocab.strip() in list_of_deck_vocabs_20k and vocab != 'placeholder':
                 nid = dict_of_note_first_fields[_from_utf8(vocab.strip())]
                 cids = mw.col.findCards('nid:' + str(nid))
+                
+                # num of cards to resched per note (default = 1)
+                number_of_cards_to_resched_ctr = 0
+                for card_id in cids:
+                    number_of_cards_to_resched_ctr += 1
 
-                try:
-                    first_card_id = cids[0]
-                except IndexError:
-                    first_card_id = cids
+                    if number_of_cards_to_resched_ctr >= self.number_of_cards_to_resched_per_note + 1:
+                        break
 
-                card = mw.col.getCard(first_card_id)
+                    card = mw.col.getCard(card_id)
 
-                if card.type == 0 or card.queue == -1 or card.queue == -2 or card.queue == -3:
-                    self.matched_vocab.append(vocab)
-                    self.number_of_replacements += 1
-                    ctr += 1
+                    if card.type == 0 or card.queue == -1 or card.queue == -2 or card.queue == -3:
+                        self.matched_vocab.append(vocab)
+                        self.number_of_replacements += 1
+                        ctr += 1
 
-                    mw.col.sched.unsuspendCards([first_card_id])
-                    mw.col.sched.sortCards([first_card_id], start=ctr, step=1)
+                        mw.col.sched.unsuspendCards([card_id])
+                        mw.col.sched.sortCards([card_id], start=ctr, step=1)
 
-                elif card.type != 0:
-                    self.matchned_but_not_rescheduled.append(vocab)
+                    elif card.type != 0:
+                        self.matchned_but_not_rescheduled.append(vocab)
 
                 if ctr == len(list_of_vocabs) + 2:
                     break
