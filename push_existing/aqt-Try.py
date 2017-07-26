@@ -9,12 +9,13 @@
 
 from aqt.qt import *
 from aqt import mw
-from anki.hooks import addHook
-from aqt.utils import showInfo      # TODO: temporary import
+from aqt.utils import showInfo          # TODO: temporary import
+from anki.utils import intTime
 # import csv
 import os
 import codecs
-import time
+# import time                           # TODO: use anki utils intTime
+
 from PyQt4 import QtCore
 
 # Credits to Alex Yatskov (foosoft)
@@ -25,15 +26,12 @@ except AttributeError:
     def _fromUtf8(s):
         return s
 
-# from PyQt5.QtWidgets import *       # TODO: temporary import    =======
-# from PyQt5.QtGui import *           # TODO: temporary import    =======
-from anki.storage import Collection
+# from PyQt5.QtWidgets import *         # TODO: temporary import    =======
+# from PyQt5.QtGui import *             # TODO: temporary import    =======
+# from anki.storage import Collection
 
 __version__ = '0.0'
-# July 25 2017
-
-# ## NOTE: YOU MUST RESET THE SCHEDULER AFTER ANY DB CHANGES
-# ## BY DOING mw.reset()
+# July 26 2017
 
 HOTKEY = "Shift+P"
 
@@ -72,11 +70,10 @@ HOTKEY = "Shift+P"
 
 # TODO: (VERY IMPORTANT) Include a log file of the replacements done, number of replacements, what were not replaced, etc.
 
-# =====================  =====================  ===================== #
+#  ===================== TO_DO_LIST ===================== #
 
 
 class TextEditor(QDialog):
-    # mw is passed as parent
     def __init__(self, parent):
         """
         Initialize the UI
@@ -98,7 +95,7 @@ class TextEditor(QDialog):
         self.selected_model = ''                                # TODO: to be filled in by a signal
         self.field_tomatch = ''                                 # TODO: to be filled in by a signal
 
-        self.vocabulary_text = QPlainTextEdit(self)                  # QTextEdit 1st arg = parent
+        self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
 
         # ===================== BUTTONS ===================== #
         self.clr_btn = QPushButton('Clear Text')                # works
@@ -164,7 +161,7 @@ class TextEditor(QDialog):
         # buttons lined horizontally
         # to be added later to v_layout
         h_layout.addWidget(self.clr_btn)
-        h_layout.addWidget(self.resched_btn)                        # Main
+        h_layout.addWidget(self.resched_btn)
         h_layout.addWidget(self.show_contents)
         # h_layout.addWidget(self.write_to_list_btn)                # FIXME: Temp
         h_layout.addWidget(self.write_to_txt_btn)                   # CSV Write
@@ -187,40 +184,35 @@ class TextEditor(QDialog):
 
     # FIXME: doesn't fucking work
     def value_changed(self):
-        self.list_of_vocabs[:] = []    # empty it before filling it again
+        self.list_of_vocabs[:] = []
 
         for line in self.vocabulary_text.toPlainText():
             self.list_of_vocabs.append(line)
 
-    # temporary
-    # only created this so that I'd see what the contents are
-    # works!
+    # temporary, only created this so that I'd see what the contents are
     def csv_write(self):
         filename = QFileDialog.getSaveFileName(self,
                                                'Save CSV',
                                                os.getenv('HOME'),
                                                'TXT(*.txt)'
                                                )
-        # showInfo(filename)
+
         if filename:
-            if filename != '':   # what does this do again?
-                with open(filename, 'w') as file:
-                # with open(filename, 'w', encoding='utf-8') as file:
+        # if filename != '':   # what does this do again?
+            with open(filename, 'w') as file:
+            # with open(filename, 'w', encoding='utf-8') as file:
 
-                    # csvwriter = csv.writer(file, delimiter='\n', quotechar='|')
-                    for line in self.list_of_vocabs:
-                        # line = line.decode('utf-8')
-                        # showInfo(line.encode('utf-8'))
-                        file.write(line.encode('utf-8'))
+                # csvwriter = csv.writer(file, delimiter='\n', quotechar='|')
+                for line in self.list_of_vocabs:
+                    file.write(line.encode('utf-8'))
 
-    # works!, very important
+    # TODO: Combobox for delimiter
+    # TODO: use csv writer so I can specify the delimiter
     def import_csv(self, delimiter='\n'):
-        # getOpenFileName (QWidget parent = None, QString caption = '',
-        # QString directory = '', QString filter = '', Options options = 0)
-
-        # first, empty the list before importing
         del self.list_of_vocabs[:]
 
+        # getOpenFileName (QWidget parent = None, QString caption = '',
+        # QString directory = '', QString filter = '', Options options = 0)
         filename = QFileDialog.getOpenFileName(self,
                                                'Open CSV',
                                                os.getenv('HOME'),
@@ -228,18 +220,15 @@ class TextEditor(QDialog):
                                                )
 
         if filename:
-            if filename != '':   # what does this do again?
-                # why the heck does Py 2.7 not have an encoding parameter????!!!!!!
-                # with open(filename, 'r') as file:
-                with codecs.open(filename, 'r', encoding='utf-8') as file:
+            # if filename != '':   # what does this do again?
+            with codecs.open(filename, 'r', encoding='utf-8') as file:
 
-                    # just did this because apparently the program doesn't resched the first vocab in the line
-                    # dunno why
-                    self.list_of_vocabs.append('\n')
-                    # csvreader = csv.reader(file, delimiter=delimiter, quotechar='|')
-                    for line in file:
-                        # line = line.decode('utf-8')
-                        self.list_of_vocabs.append(line)
+                # just did this because apparently the program doesn't resched the first vocab in the line
+                self.list_of_vocabs.append('placeholder')
+                # csvreader = csv.reader(file, delimiter=delimiter, quotechar='|')
+                for line in file:
+                    # line = line.decode('utf-8')
+                    self.list_of_vocabs.append(line)
 
     # FIXME: obsolete!?
     # def write_to_list(self):
@@ -253,30 +242,23 @@ class TextEditor(QDialog):
         for vocab in self.list_of_vocabs:
             showInfo(_fromUtf8(vocab))
 
-
     # works
     def clear_text(self):
         self.vocabulary_text.clear()
         self.vocabulary_text.setText('')
 
     def reset_list(self):
-        # how to empty list
-        # https://stackoverflow.com/questions/1400608/how-to-empty-a-list-in-python
         self.list_of_vocabs[:] = []
 
     def show_rescheduled(self):
-        # showInfo(str(self.matched_vocab))
         for matched in self.matched_vocab:
             showInfo(_fromUtf8(matched))
 
-
     def show_not_rescheduled(self):
-        # showInfo(str(self.matchned_but_not_rescheduled))
         for matched_but_not_res in self.matchned_but_not_rescheduled:
             showInfo(_fromUtf8(matched_but_not_res))
 
     def show_not_matched(self):
-        # showInfo(str(self.unmatched_vocab))
         for unmatched in self.unmatched_vocab:
             showInfo(_fromUtf8(unmatched))
 
@@ -337,7 +319,7 @@ class TextEditor(QDialog):
         # ===== TEMP ==== #
 
         for vocab in list_of_vocabs:
-            if vocab.strip() in list_of_deck_vocabs_20k:
+            if vocab.strip() in list_of_deck_vocabs_20k and vocab != 'placeholder':
 
                 # ===== TEMP ==== #
                 # if vocab.strip() == u'曇る':
@@ -347,7 +329,6 @@ class TextEditor(QDialog):
 
                 # showInfo(_fromUtf8(vocab))
                 nid = dict_of_note_first_fields[_fromUtf8(vocab.strip())]
-
                 cids = mw.col.findCards('nid:' + str(nid))
 
                 # FIXME: Probably uncessary, only did this because of a prev bug
@@ -374,7 +355,10 @@ class TextEditor(QDialog):
                                                 id = ?
                                                     AND
                                                 type = 0
-                                        ''', ctr, int(time.time()), int(first_card_id)
+                                        ''',
+                                            ctr,
+                                            intTime(),
+                                            int(first_card_id)
                                       )
 
                 # Same as type, but -1=suspended, -2=user buried, -3=sched buried
@@ -393,7 +377,10 @@ class TextEditor(QDialog):
                                                 queue = 0
                                             WHERE
                                                 id = ?
-                                        ''', ctr, int(time.time()), int(first_card_id)
+                                        ''',
+                                            ctr,
+                                            intTime(),
+                                            int(first_card_id)
                                       )
 
                 # elif card.queue != -1:
@@ -407,7 +394,7 @@ class TextEditor(QDialog):
 
                 # NOTE: Limit the number of reschedules to 100 for now
                 # break when the number of replacements is the same as the list length
-                if ctr == len(list_of_vocabs) + 1:
+                if ctr == 2*len(list_of_vocabs) + 1:
                 # if ctr == 100:
                     break
 
