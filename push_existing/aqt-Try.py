@@ -4,8 +4,8 @@
 # Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 2017
 # License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
 
-# NOTE: I've limited the number of replacements to 100 just so that this won't screw things just in case
-# NOTE: This script unsuspends suspended cards as well but doesn't work for some vocabs like 爪楊枝, dunno why
+# NOTE: I've limited the number of replacements to the num of vocabs just so that this won't screw things just in case
+# NOTE: This script unsuspends suspended cards as well but doesn't work for some vocabs dunno why
 
 from aqt.qt import *
 from aqt import mw
@@ -14,7 +14,6 @@ from anki.utils import intTime
 import csv
 import os
 import codecs
-# import time                           # TODO: use anki utils intTime
 
 # Credits to Alex Yatskov (foosoft)
 # I'm not even sure what this does
@@ -290,7 +289,8 @@ class TextEditor(QDialog):
                     mw.col.db.execute(''' UPDATE cards
                                             SET due = ?,
                                                 mod = ?,
-                                                usn = -1
+                                                usn = -1,
+                                                queue = 0
                                             WHERE
                                                 id = ?
                                                     AND
