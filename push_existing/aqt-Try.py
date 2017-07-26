@@ -100,7 +100,7 @@ class TextEditor(QDialog):
         self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
 
         # setWindowTitle is probably a super method from QtGui
-        self.setWindowTitle('Push')
+        self.setWindowTitle('Push Existing Vocab add-on')
 
         self.init_buttons()
         self.init_signals()
@@ -249,7 +249,7 @@ class TextEditor(QDialog):
     #     self.vocabulary_text.setText('')
 
     def reset_list(self):
-        self.list_of_vocabs[:] = []
+        del self.list_of_vocabs[:]
 
         showInfo('Succesfully reset the list of cards\n'
                  'Please import a text file to fill the list again')
@@ -272,7 +272,6 @@ class TextEditor(QDialog):
     # FIXME: (VERY IMPORTANT!!!) it appears that the first vocab on \
     # the list is not rescheduled (wheter suspended or not)
     # it appears that the fix is simply to add a newline at the beginning of the list
-
     def anki_based_reschedule(self):
         """
         Main function of the program
@@ -302,7 +301,7 @@ class TextEditor(QDialog):
         dict_of_note_first_fields = {
             mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>'):
                 note_id
-            for note_id in nids
+                for note_id in nids
             }
 
         list_of_deck_vocabs_20k = dict_of_note_first_fields.keys()
@@ -340,7 +339,7 @@ class TextEditor(QDialog):
                     elif card.type != 0:
                         self.matchned_but_not_rescheduled.append(vocab)
 
-                if ctr == len(list_of_vocabs) + 2:
+                if ctr == len(list_of_vocabs) + 1:
                     break
 
             else:
