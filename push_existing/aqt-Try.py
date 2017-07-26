@@ -34,15 +34,21 @@ HOTKEY = 'Shift+P'
 # manually typing them is very hard, and I'm very lazy
 # TODO: comment out when porting
 
-# from PyQt5.QtWidgets import *
-# from PyQt5.QtGui import *
+if False:
+    from PyQt5.QtWidgets import *
+    from PyQt5.QtGui import *
+    from anki.storage import Collection
 
-# from anki.storage import Collection
-# class Temporary:
-#     def __init__(self):
-#         self.col = Collection('', log=True)
-#
-# mw = Temporary()
+    class Temporary:
+        def __init__(self):
+            self.col = Collection('', log=True)
+
+    mw = Temporary()
+
+    mw.col.sched.unsuspendCards()
+    # reposition
+    # def sortCards(self, cids, start=1, step=1, shuffle=False, shift=False):
+    mw.col.sched.sortCards()
 
 # ===================== TEMPORARY STUFF ===================== #
 
@@ -57,6 +63,7 @@ HOTKEY = 'Shift+P'
 # TODO: add functionality to tag the cards that were moved by adding tag: movedByPushToFrontPlugin
 # TODO: drop-down menu of decks and note types
 # TODO: drop-down menu of delimiter
+# TODO: Anki-base reschedule (https://github.com/dae/anki/blob/master/anki/sched.py)
 
 # TODO: include functionaly for user to push only CERTAIN CARDS, not entire notes (DONE!)
 
@@ -78,15 +85,15 @@ class TextEditor(QDialog):
         # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
         super(TextEditor, self).__init__(parent)
 
-        self.list_of_vocabs = []                                # list of mined vocab
         self.matched_vocab = []                                 # matched and rescheduled
-        self.matchned_but_not_rescheduled = []
+        self.list_of_vocabs = []                                # list of mined vocab
         self.unmatched_vocab = []
+        self.matchned_but_not_rescheduled = []
 
         # associated with a drop-down widget where the drop-down displays all decks and subdecks
         self.selected_deck = ''                                 # TODO: to be filled in by a signal
-        self.selected_model = ''                                # TODO: to be filled in by a signal
         self.field_tomatch = ''                                 # TODO: to be filled in by a signal
+        self.selected_model = ''                                # TODO: to be filled in by a signal
 
         self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
 
@@ -99,37 +106,39 @@ class TextEditor(QDialog):
 
     def init_buttons(self):
         # ===================== PERMANENT ===================== #
-        self.resched_btn = QPushButton('Reschedule')
-        self.write_to_txt_btn = QPushButton('Write to CSV')
         self.import_btn = QPushButton('Import CSV')
         self.clear_list = QPushButton('Clear List')
+        self.resched_btn = QPushButton('Reschedule')
+        self.write_to_txt_btn = QPushButton('Write to CSV')
 
+        self.show_contents = QPushButton('Show Contents')
+        self.show_unmatched_cards = QPushButton('Cards without any matches')
         self.show_reschd_matched_cards = QPushButton('Show Rescheduled Matches')
         self.show_nonrschd_matched_cards = QPushButton('Show Matched but not Reschedued')
-        self.show_unmatched_cards = QPushButton('Cards without any matches')
-        self.show_contents = QPushButton('Show Contents')
 
         # ===================== TEMPORARY ===================== #
         self.clr_btn = QPushButton('Clear Text')  # works
         # self.write_to_list_btn = QPushButton('Write to List') # FIXME: Probably unnecessary
+        self.anki_based_reschedule_button = QPushButton('Anki-Based Resched')
 
     def init_signals(self):
         # ===================== PERMANENT ===================== #
-        self.resched_btn.clicked.connect(self.reschedule_cards_alternate)
-        self.write_to_txt_btn.clicked.connect(self.csv_write)
-        # TODO: add an additional LineEdit(or combobox) box where I can input what the delimiter will be
-        self.import_btn.clicked.connect(lambda: self.import_csv(delimiter='\n'))
-        self.show_contents.clicked.connect(self.show_contents_signal)
         self.clear_list.clicked.connect(self.reset_list)
+        self.write_to_txt_btn.clicked.connect(self.csv_write)
+        self.show_contents.clicked.connect(self.show_contents_signal)
+        self.resched_btn.clicked.connect(self.reschedule_cards_alternate)
+        self.import_btn.clicked.connect(lambda: self.import_csv(delimiter='\n'))
+        # TODO: add an additional LineEdit(or combobox) box where I can input what the delimiter will be
 
+        self.show_unmatched_cards.clicked.connect(self.show_not_matched)
         self.show_reschd_matched_cards.clicked.connect(self.show_rescheduled)
         self.show_nonrschd_matched_cards.clicked.connect(self.show_not_rescheduled)
-        self.show_unmatched_cards.clicked.connect(self.show_not_matched)
 
         # ===================== TEMPORARY ===================== #
-        self.vocabulary_text.textChanged.connect(self.value_changed)
         # self.clr_btn.clicked.connect(self.clear_text)
+        self.vocabulary_text.textChanged.connect(self.value_changed)
         # self.write_to_list_btn.clicked.connect(self.write_to_list)
+        self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
 
     def init_ui(self):
         v_layout = QVBoxLayout()
@@ -137,21 +146,24 @@ class TextEditor(QDialog):
 
         # buttons lined horizontally to be added later to v_layout
         # ===================== PERMANENT ===================== #
+        h_layout.addWidget(self.import_btn)
+        h_layout.addWidget(self.clear_list)
         h_layout.addWidget(self.resched_btn)
         h_layout.addWidget(self.show_contents)
         h_layout.addWidget(self.write_to_txt_btn)                   # CSV Write
-        h_layout.addWidget(self.import_btn)
-        h_layout.addWidget(self.clear_list)
 
+        h_layout.addWidget(self.show_unmatched_cards)
         h_layout.addWidget(self.show_reschd_matched_cards)
         h_layout.addWidget(self.show_nonrschd_matched_cards)
-        h_layout.addWidget(self.show_unmatched_cards)
 
 
         # ===================== TEMPORARY ===================== #
-        # h_layout.addWidget(self.write_to_list_btn)                # FIXME: Temp
-        v_layout.addWidget(self.vocabulary_text)
         h_layout.addWidget(self.clr_btn)
+        # h_layout.addWidget(self.write_to_list_btn)                # FIXME: Temp
+        h_layout.addWidget(self.anki_based_reschedule_button)
+
+        # ===================== PERMANENT (V-Layout) ===================== #
+        v_layout.addWidget(self.vocabulary_text)
 
         v_layout.addLayout(h_layout)
 
@@ -233,6 +245,64 @@ class TextEditor(QDialog):
     # FIXME: (VERY IMPORTANT!!!) it appears that the first vocab on \
     # the list is not rescheduled (wheter suspended or not)
     # it appears that the fix is simply to add a newline at the beginning of the list
+
+    def anki_based_reschedule(self):
+        """
+        Main function of the program
+        Checks every Note > Field if it is inside the
+        list of mined words and sets the due date to zero accdngly
+        Version 3: same as version 2 except this one uses built-in Anki modules
+
+        :return:    None
+        """
+        self.field_tomatch = 'Expression_Original_Unedited'
+        self.selected_model = 'Japanese-1b811 example_sentences'
+
+        self.number_of_replacements = 0
+
+        mid = mw.col.models.byName(self.selected_model)['id']       # model ID
+        nids = mw.col.findNotes('mid:' + str(mid))                  # returns a list of noteIds
+        ctr = 0
+
+        dict_of_note_first_fields = {
+        mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>'):
+            note_id
+        for note_id in nids}
+
+        list_of_deck_vocabs_20k = dict_of_note_first_fields.keys()
+        list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs]
+
+        for vocab in list_of_vocabs:
+            if vocab.strip() in list_of_deck_vocabs_20k and vocab != 'placeholder':
+                nid = dict_of_note_first_fields[_from_utf8(vocab.strip())]
+                cids = mw.col.findCards('nid:' + str(nid))
+
+                try:
+                    first_card_id = cids[0]
+                except IndexError:
+                    first_card_id = cids
+
+                card = mw.col.getCard(first_card_id)
+
+                if card.type == 0 or card.queue == -1 or card.queue == -2 or card.queue == -3:
+                    self.matched_vocab.append(vocab)
+                    self.number_of_replacements += 1
+                    ctr += 1
+
+                    mw.col.sched.unsuspendCards([first_card_id])
+                    mw.col.sched.sortCards([first_card_id], start=ctr, step=1)
+
+                elif card.type != 0:
+                    self.matchned_but_not_rescheduled.append(vocab)
+
+                if ctr == len(list_of_vocabs) + 2:
+                    break
+
+            else:
+                self.unmatched_vocab.append(vocab)
+
+        mw.reset()
+
     def reschedule_cards_alternate(self):
         """
         Main function of the program
@@ -280,35 +350,13 @@ class TextEditor(QDialog):
                 card = mw.col.getCard(first_card_id)
 
                 # FIXME: this if might not be needed, the if next to this might be the only needed clause
-                if card.type == 0:
+                if card.type == 0 or card.queue == -1 or card.queue == -2 or card.queue == -3:
                     self.matched_vocab.append(vocab)
                     self.number_of_replacements += 1
                     ctr += 1
 
                     # NOTE: You can't use LIMIT inside this SQL operation because they only execute one at a time
-                    mw.col.db.execute(''' UPDATE cards
-                                            SET due = ?,
-                                                mod = ?,
-                                                usn = -1,
-                                                queue = 0
-                                            WHERE
-                                                id = ?
-                                                    AND
-                                                type = 0
-                                        ''',
-                                            ctr,
-                                            intTime(),
-                                            int(first_card_id)
-                                      )
-
-                # Same as type, but -1=suspended, -2=user buried, -3=sched buried
-                # if card.queue == -1 or card.queue == -2 or card.queue == -3:
-                elif card.queue == -1 or card.queue == -2 or card.queue == -3:
-                    self.matched_vocab.append(vocab)
-                    self.number_of_replacements += 1
-                    ctr += 1
-
-                    # type = 0 unsuspends the card
+                    # Same as type, but -1=suspended, -2=user buried, -3=sched buried
                     mw.col.db.execute(''' UPDATE cards
                                             SET due = ?,
                                                 mod = ?,
