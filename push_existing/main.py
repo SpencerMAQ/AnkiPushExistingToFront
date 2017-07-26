@@ -80,12 +80,11 @@ class TextEditor(QDialog):
         :param parent:      global mw from aqt
         """
 
-        # QDialog args from http://pyqt.sourceforge.net/Docs/PyQt4/qdialog.html#QDialog
         # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
         super(TextEditor, self).__init__(parent)
 
-        self.matched_vocab = []                                 # matched and rescheduled
-        self.list_of_vocabs = []                                # list of mined vocab
+        self.matched_vocab = []
+        self.list_of_vocabs = []
         self.unmatched_vocab = []
         self.matchned_but_not_rescheduled = []
 
@@ -114,12 +113,6 @@ class TextEditor(QDialog):
 
         self.show_contents = QPushButton('Show Contents')
 
-        # ===================== TEMPORARY ===================== #
-        # self.resched_btn = QPushButton('Reschedule')
-        # self.clr_btn = QPushButton('Clear Text')  # works
-        # self.write_to_txt_btn = QPushButton('Write to CSV')
-        # self.write_to_list_btn = QPushButton('Write to List') # FIXME: Probably unnecessary
-
         # ===================== TO BE TRANSFERRED TO LOGGING ===================== #
         self.show_unmatched_cards = QPushButton('Cards without any matches')
         self.show_reschd_matched_cards = QPushButton('Show Rescheduled Matches')
@@ -137,13 +130,6 @@ class TextEditor(QDialog):
         self.show_reschd_matched_cards.clicked.connect(self.show_rescheduled)
         self.show_nonrschd_matched_cards.clicked.connect(self.show_not_rescheduled)
 
-        # ===================== TEMPORARY ===================== #
-        # self.clr_btn.clicked.connect(self.clear_text)
-        # self.vocabulary_text.textChanged.connect(self.value_changed)
-        # self.write_to_list_btn.clicked.connect(self.write_to_list)
-        # self.write_to_txt_btn.clicked.connect(self.csv_write)
-        # self.resched_btn.clicked.connect(self.reschedule_cards_alternate)
-
     def init_ui(self):
         v_layout = QVBoxLayout()
         h_layout = QHBoxLayout()
@@ -159,12 +145,6 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.show_reschd_matched_cards)
         h_layout.addWidget(self.show_nonrschd_matched_cards)
 
-        # ===================== TEMPORARY ===================== #
-        # h_layout.addWidget(self.clr_btn)
-        # h_layout.addWidget(self.resched_btn)
-        # h_layout.addWidget(self.write_to_txt_btn)                   # CSV Write
-        # h_layout.addWidget(self.write_to_list_btn)                # FIXME: Temp
-
         # ===================== PERMANENT (V-Layout) ===================== #
         v_layout.addWidget(self.vocabulary_text)
 
@@ -173,36 +153,9 @@ class TextEditor(QDialog):
         self.setLayout(v_layout)
         self.show()
 
-    # # FIXME: doesn't fucking work
-    # def value_changed(self):
-    #     self.list_of_vocabs[:] = []
-    #
-    #     for line in self.vocabulary_text.toPlainText():
-    #         self.list_of_vocabs.append(line)
-
-    # temporary, only created this so that I'd see what the contents are
-    # def csv_write(self):
-    #     filename = QFileDialog.getSaveFileName(self,
-    #                                            'Save CSV',
-    #                                            os.getenv('HOME'),
-    #                                            'TXT(*.txt)'
-    #                                            )
-    #
-    #     if filename:
-    #         with open(filename, 'w') as file:
-    #         # with open(filename, 'w', encoding='utf-8') as file:
-    #
-    #             # csvwriter = csv.writer(file, delimiter='\n', quotechar='|')
-    #             for line in self.list_of_vocabs:
-    #                 file.write(line.encode('utf-8'))
-
-    # TODO: Combobox for delimiter
-    # TODO: use csv writer so I can specify the delimiter
     def import_csv(self, delimiter='\n'):
         del self.list_of_vocabs[:]
 
-        # getOpenFileName (QWidget parent = None, QString caption = '',
-        # QString directory = '', QString filter = '', Options options = 0)
         filename = QFileDialog.getOpenFileName(self,
                                                'Open CSV',
                                                os.getenv('HOME'),
@@ -212,7 +165,7 @@ class TextEditor(QDialog):
         if filename:
             with codecs.open(filename, 'r', encoding='utf-8') as file:
 
-                # program doesn't resched the first vocab in the line
+                # FIXME: program doesn't resched the first vocab in the line
                 # csvreader = csv.reader(file, delimiter=delimiter, quotechar='|')
                 for line in file:
                     # line = line.decode('utf-8')
@@ -353,90 +306,6 @@ class TextEditor(QDialog):
                      .format(len(self.matchned_but_not_rescheduled)))
         if self.unmatched_vocab:
             showInfo('Unable to find {} cards'.format(len(self.unmatched_vocab)))
-
-    def reschedule_cards_alternate(self):
-        """
-        Main function of the program
-        Checks every Note > Field if it is inside the
-        list of mined words and sets the due date to zero accdngly
-        Version 2: creates a dictionary of the cards inside the model,
-        Then a for loop of the vocabs from the CSV file checks if the
-        vocab is inside the dictionary
-
-        :return:    None
-        """
-
-        # TODO: Use a combobox for the model instead of this primitive shit
-        self.field_tomatch = 'Expression_Original_Unedited'
-        self.selected_model = 'Japanese-1b811 example_sentences'
-
-        # TODO: Add a Push Button for this
-        self.number_of_replacements = 0
-
-        mid = mw.col.models.byName(self.selected_model)['id']       # model ID
-        nids = mw.col.findNotes('mid:' + str(mid))                  # returns a list of noteIds
-
-        ctr = 0
-
-        # list comprehension of tuples in format: nid, first field for that nid (reversed)
-        # TODO: how to ensure that all html is stripped? Is there a module for that? (beautifulsoup perhaps?)
-        dict_of_note_first_fields = {mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>') :
-                                        note_id
-                                        for note_id in nids}
-
-        list_of_deck_vocabs_20k = dict_of_note_first_fields.keys()
-        list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs]
-
-        self.number_of_notes_in_deck = len(list_of_deck_vocabs_20k)
-
-        for vocab in list_of_vocabs:
-            if vocab.strip() in list_of_deck_vocabs_20k and vocab != 'placeholder':
-                nid = dict_of_note_first_fields[_from_utf8(vocab.strip())]
-                cids = mw.col.findCards('nid:' + str(nid))
-
-                # FIXME: Probably uncessary, only did this because of a prev bug
-                try:
-                    first_card_id = cids[0]
-                except IndexError:
-                    first_card_id = cids
-
-                card = mw.col.getCard(first_card_id)
-
-                # FIXME: this if might not be needed, the if next to this might be the only needed clause
-                if card.type == 0 or card.queue == -1 or card.queue == -2 or card.queue == -3:
-                    self.matched_vocab.append(vocab)
-                    self.number_of_replacements += 1
-                    ctr += 1
-
-                    # NOTE: You can't use LIMIT inside this SQL operation because they only execute one at a time
-                    # Same as type, but -1=suspended, -2=user buried, -3=sched buried
-                    mw.col.db.execute(''' UPDATE cards
-                                            SET due = ?,
-                                                mod = ?,
-                                                usn = -1,
-                                                type = 0,
-                                                queue = 0
-                                            WHERE
-                                                id = ?
-                                        ''',
-                                            ctr,
-                                            intTime(),
-                                            int(first_card_id)
-                                      )
-
-                elif card.type != 0:
-                    # cards that weren't rescheduled because they're learning/mature
-                    self.matchned_but_not_rescheduled.append(vocab)
-
-                # NOTE: break when the number of replacements is the same as the list length
-                if ctr == len(list_of_vocabs) + 2:
-                    break
-
-            else:
-                self.unmatched_vocab.append(vocab)
-
-        mw.reset()
-        showInfo('Successfully Rescheduled {} cards'.format(self.number_of_replacements))
 
 
 def init_window():
