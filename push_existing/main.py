@@ -10,8 +10,7 @@
 from aqt.qt import *
 from aqt import mw
 from aqt.utils import showInfo          # TODO: temporary import
-from anki.utils import intTime
-import csv
+import csv                              # practically useless on py 2.7
 import os
 import codecs
 
@@ -96,6 +95,10 @@ class TextEditor(QDialog):
         self.number_of_cards_to_resched_per_note = 1
         self.number_of_notes_in_deck = 0
         self.enable_add_note_tag = False
+        self.delimiter = '\n'
+        self.delimiter = '\r\n'
+        # self.encoding = 'UTF-8-SIG'
+        self.encoding = 'UTF-8'
 
         # FIXME: Not needed at all
         self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
@@ -124,7 +127,7 @@ class TextEditor(QDialog):
         # ===================== PERMANENT ===================== #
         self.clear_list.clicked.connect(self.reset_list)
         self.show_contents.clicked.connect(self.show_contents_signal)
-        self.import_btn.clicked.connect(lambda: self.import_csv(delimiter='\n'))
+        self.import_btn.clicked.connect(lambda: self.import_csv(self.delimiter, self.encoding))
         self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
         # TODO: add an additional LineEdit(or combobox) box where I can input what the delimiter will be
 
@@ -155,11 +158,17 @@ class TextEditor(QDialog):
         self.setLayout(v_layout)
         self.show()
 
-    def import_csv(self, delimiter='\n'):
+    def import_csv(self, delimiter, encoding):
+        """
+        Import a DSV File with special provisions based on encoding
+        Do note the difference between 'utf-8-sig' (with BOM) and 'utf-8'
+
+        :param delimiter:   '\n' by default
+        :param encoding:    'utf-8' by default
+        :return:
+        """
+        self.reset_list()
         del self.list_of_vocabs[:]
-        del self.matched_vocab[:]
-        del self.unmatched_vocab[:]
-        del self.matchned_but_not_rescheduled[:]
 
         filename = QFileDialog.getOpenFileName(self,
                                                'Open CSV',
@@ -168,13 +177,18 @@ class TextEditor(QDialog):
                                                )
 
         if filename:
-            with codecs.open(filename, 'r', encoding='utf-8') as file:
-
+            with codecs.open(filename, 'r', encoding=encoding) as file:
                 # FIXME: program doesn't resched the first vocab in the line
-                # csvreader = csv.reader(file, delimiter=delimiter, quotechar='|')
-                for line in file:
-                    # line = line.decode('utf-8')
-                    self.list_of_vocabs.append(line)
+
+                contents = file.read()
+                csvreader = contents.split(delimiter)
+
+                # is it because of py 2.7 that csvreader can't parse unicode?
+                for line in csvreader:
+                    self.list_of_vocabs.append(line.strip('\r'))
+
+                # for line in file:
+                #     self.list_of_vocabs.append(line)
 
         # -1 because of necessary placeholder first line
         if self.list_of_vocabs:
@@ -189,9 +203,8 @@ class TextEditor(QDialog):
         if not list_of_vocabs:
             showInfo('The list is empty')
 
-        # FiXME: doesn't remove placeholder from the list, probably because of unicode
         try:
-            list_of_vocabs.remove(u'placeholder')
+            list_of_vocabs.remove('placeholder')
         except ValueError:
             pass
 
@@ -203,13 +216,21 @@ class TextEditor(QDialog):
             # raise
 
     def reset_list(self):
-        del self.list_of_vocabs[:]
+        """
+        Primarily used as an event in response to the button
+        Used in other methods as well (import csv and resched)
+        to ensure that the lists they need are empty
+        :return:
+        """
         del self.matched_vocab[:]
         del self.unmatched_vocab[:]
         del self.matchned_but_not_rescheduled[:]
+        sender = self.sender()
 
-        showInfo('Succesfully reset the list of cards\n'
-                 'Please import a text file to fill the list again')
+        if sender.text() == 'Clear List':
+            del self.list_of_vocabs[:]
+            showInfo('Succesfully reset the list of cards\n'
+                     'Please import a text file to fill the list again')
 
     def show_rescheduled(self):
         if self.matched_vocab:
@@ -230,17 +251,15 @@ class TextEditor(QDialog):
     def show_not_matched(self):
         if self.unmatched_vocab:
             for unmatched in self.unmatched_vocab:
-                showInfo(_from_utf8(unmatched))
+                if unmatched != 'placeholder':
+                    showInfo(_from_utf8(unmatched))
 
         else:
             showInfo('None')
 
     # NOTE: this seems to be slower than my original function
-    # might need to recode this
     # TODO: I might recode this to use executemany instead, I doubt that'll speed things up though
-    # FIXME: (VERY IMPORTANT!!!) it appears that the first vocab on \
-    # the list is not rescheduled (wheter suspended or not)
-    # it appears that the fix is simply to add a newline at the beginning of the list
+    # FIXME: (VERY IMPORTANT!!!) it appears that the first vocab isn't rescheduled
     def anki_based_reschedule(self):
         """
         Main function of the program
@@ -255,16 +274,13 @@ class TextEditor(QDialog):
         self.selected_model = 'Japanese-1b811 example_sentences'
 
         self.number_of_replacements = 0
-
-        del self.matched_vocab[:]
-        del self.unmatched_vocab[:]
-        del self.matchned_but_not_rescheduled[:]
+        self.reset_list()
 
         mid = mw.col.models.byName(self.selected_model)['id']       # model ID
         nids = mw.col.findNotes('mid:' + str(mid))                  # returns a list of noteIds
         ctr = 0
 
-        list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs if vocab != u'placeholder']
+        list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs]
 
         if not list_of_vocabs:
             showInfo('The List is empty\n'
@@ -289,7 +305,7 @@ class TextEditor(QDialog):
         for vocab in list_of_vocabs:
             # FIXME: temp
             # showInfo(_from_utf8(vocab))
-            if (vocab.strip() in list_of_deck_vocabs_20k) and (vocab != u'placeholder'):
+            if (vocab.strip() in list_of_deck_vocabs_20k) and (vocab != 'placeholder'):
                 nid = dict_of_note_first_fields[_from_utf8(vocab.strip())]
                 cids = mw.col.findCards('nid:' + str(nid))
 
