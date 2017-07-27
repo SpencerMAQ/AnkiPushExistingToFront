@@ -33,7 +33,6 @@ TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab_add-on_for_Anki'
 # ===================== TEMPORARY STUFF ===================== #
 # just so I can get the namespaces inside  Collection
 # manually typing them is very hard, and I'm very lazy
-# TODO: comment out when porting
 
 if False:
     from PyQt5.QtWidgets import *
@@ -62,13 +61,15 @@ if False:
 # TODO: drop-down menu of delimiter
 # TODO: Make this app use a QMainWindow by creating a new QApplication instance
 
-# TODO: include functionaly for user to push only CERTAIN CARDS, not entire notes (DONE!)
+# TODO: include functionaly for user to push only CERTAIN CARDS based on the names of the cards (Diffucult)
 
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 
 # TODO: (VERY IMPORTANT) Include a log file of the replacements done, number of replacements, what were not replaced, etc.
 
 # FIXME: The CSV File needs a placeholder as the first line
+
+# TODO: Add functionality for user to decide whether or not to add tags to the notes
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -94,6 +95,7 @@ class TextEditor(QDialog):
         self.selected_model = ''                                # TODO: to be filled in by a signal
         self.number_of_cards_to_resched_per_note = 1
         self.number_of_notes_in_deck = 0
+        self.enable_add_note_tag = False
 
         # FIXME: Not needed at all
         self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
@@ -155,6 +157,9 @@ class TextEditor(QDialog):
 
     def import_csv(self, delimiter='\n'):
         del self.list_of_vocabs[:]
+        del self.matched_vocab[:]
+        del self.unmatched_vocab[:]
+        del self.matchned_but_not_rescheduled[:]
 
         filename = QFileDialog.getOpenFileName(self,
                                                'Open CSV',
@@ -186,7 +191,7 @@ class TextEditor(QDialog):
 
         # FiXME: doesn't remove placeholder from the list, probably because of unicode
         try:
-            list_of_vocabs.remove('placeholder')
+            list_of_vocabs.remove(u'placeholder')
         except ValueError:
             pass
 
@@ -197,27 +202,38 @@ class TextEditor(QDialog):
                 showInfo(_from_utf8(vocab))
             # raise
 
-    # def clear_text(self):
-    #     self.vocabulary_text.clear()
-    #     self.vocabulary_text.setText('')
-
     def reset_list(self):
         del self.list_of_vocabs[:]
+        del self.matched_vocab[:]
+        del self.unmatched_vocab[:]
+        del self.matchned_but_not_rescheduled[:]
 
         showInfo('Succesfully reset the list of cards\n'
                  'Please import a text file to fill the list again')
 
     def show_rescheduled(self):
-        for matched in self.matched_vocab:
-            showInfo(_from_utf8(matched))
+        if self.matched_vocab:
+            for matched in self.matched_vocab:
+                showInfo(_from_utf8(matched))
+
+        else:
+            showInfo('None')
 
     def show_not_rescheduled(self):
-        for matched_but_not_res in self.matchned_but_not_rescheduled:
-            showInfo(_from_utf8(matched_but_not_res))
+        if self.matchned_but_not_rescheduled:
+            for matched_but_not_res in self.matchned_but_not_rescheduled:
+                showInfo(_from_utf8(matched_but_not_res))
+
+        else:
+            showInfo('None')
 
     def show_not_matched(self):
-        for unmatched in self.unmatched_vocab:
-            showInfo(_from_utf8(unmatched))
+        if self.unmatched_vocab:
+            for unmatched in self.unmatched_vocab:
+                showInfo(_from_utf8(unmatched))
+
+        else:
+            showInfo('None')
 
     # NOTE: this seems to be slower than my original function
     # might need to recode this
@@ -239,6 +255,10 @@ class TextEditor(QDialog):
         self.selected_model = 'Japanese-1b811 example_sentences'
 
         self.number_of_replacements = 0
+
+        del self.matched_vocab[:]
+        del self.unmatched_vocab[:]
+        del self.matchned_but_not_rescheduled[:]
 
         mid = mw.col.models.byName(self.selected_model)['id']       # model ID
         nids = mw.col.findNotes('mid:' + str(mid))                  # returns a list of noteIds
@@ -267,7 +287,9 @@ class TextEditor(QDialog):
         self.number_of_notes_in_deck = len(list_of_deck_vocabs_20k)
 
         for vocab in list_of_vocabs:
-            if vocab.strip() in list_of_deck_vocabs_20k and vocab != 'placeholder':
+            # FIXME: temp
+            # showInfo(_from_utf8(vocab))
+            if (vocab.strip() in list_of_deck_vocabs_20k) and (vocab != u'placeholder'):
                 nid = dict_of_note_first_fields[_from_utf8(vocab.strip())]
                 cids = mw.col.findCards('nid:' + str(nid))
 
@@ -288,6 +310,10 @@ class TextEditor(QDialog):
 
                         mw.col.sched.unsuspendCards([card_id])
                         mw.col.sched.sortCards([card_id], start=ctr, step=1)
+                        n = card.note()
+                        n.addTag(TAG_TO_ADD)
+                        # "If fields or tags have changed, write changes to disk."
+                        n.flush()
 
                     elif card.type != 0:
                         self.matchned_but_not_rescheduled.append(vocab)
