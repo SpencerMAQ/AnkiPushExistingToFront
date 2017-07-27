@@ -66,8 +66,6 @@ if False:
 
 # TODO: (VERY IMPORTANT) Include a log file of the replacements done, number of replacements, what were not replaced, etc.
 
-# FIXME: The CSV File needs a placeholder as the first line
-
 # TODO: Add functionality for user to decide whether or not to add tags to the notes
 
 #  ===================== TO_DO_LIST ===================== #
@@ -94,9 +92,9 @@ class TextEditor(QDialog):
         self.selected_model = ''                                # TODO: to be filled in by a signal
         self.number_of_cards_to_resched_per_note = 1
         self.number_of_notes_in_deck = 0
-        self.enable_add_note_tag = False
+        self.enable_add_note_tag = True                         # TODO: RadioButtons
         self.delimiter = '\n'
-        self.delimiter = '\r\n'
+        # self.delimiter = '\r\n'
         # self.encoding = 'UTF-8-SIG'
         self.encoding = 'UTF-8'
 
@@ -190,9 +188,8 @@ class TextEditor(QDialog):
                 # for line in file:
                 #     self.list_of_vocabs.append(line)
 
-        # -1 because of necessary placeholder first line
         if self.list_of_vocabs:
-            showInfo('Successfully Imported {} lines from CSV'.format(len(self.list_of_vocabs)-1))
+            showInfo('Successfully Imported {} lines from CSV'.format(len(self.list_of_vocabs)))
         else:
             showInfo('Nothing Imported')
 
@@ -202,11 +199,6 @@ class TextEditor(QDialog):
 
         if not list_of_vocabs:
             showInfo('The list is empty')
-
-        try:
-            list_of_vocabs.remove('placeholder')
-        except ValueError:
-            pass
 
         try:
             showInfo(_from_utf8(*list_of_vocabs))
@@ -251,15 +243,13 @@ class TextEditor(QDialog):
     def show_not_matched(self):
         if self.unmatched_vocab:
             for unmatched in self.unmatched_vocab:
-                if unmatched != 'placeholder':
-                    showInfo(_from_utf8(unmatched))
+                showInfo(_from_utf8(unmatched))
 
         else:
             showInfo('None')
 
     # NOTE: this seems to be slower than my original function
     # TODO: I might recode this to use executemany instead, I doubt that'll speed things up though
-    # FIXME: (VERY IMPORTANT!!!) it appears that the first vocab isn't rescheduled
     def anki_based_reschedule(self):
         """
         Main function of the program
@@ -303,9 +293,7 @@ class TextEditor(QDialog):
         self.number_of_notes_in_deck = len(list_of_deck_vocabs_20k)
 
         for vocab in list_of_vocabs:
-            # FIXME: temp
-            # showInfo(_from_utf8(vocab))
-            if (vocab.strip() in list_of_deck_vocabs_20k) and (vocab != 'placeholder'):
+            if vocab.strip() in list_of_deck_vocabs_20k:
                 nid = dict_of_note_first_fields[_from_utf8(vocab.strip())]
                 cids = mw.col.findCards('nid:' + str(nid))
 
@@ -326,10 +314,12 @@ class TextEditor(QDialog):
 
                         mw.col.sched.unsuspendCards([card_id])
                         mw.col.sched.sortCards([card_id], start=ctr, step=1)
-                        n = card.note()
-                        n.addTag(TAG_TO_ADD)
-                        # "If fields or tags have changed, write changes to disk."
-                        n.flush()
+
+                        if self.enable_add_note_tag:
+                            n = card.note()
+                            n.addTag(TAG_TO_ADD)
+                            # "If fields or tags have changed, write changes to disk."
+                            n.flush()
 
                     elif card.type != 0:
                         self.matchned_but_not_rescheduled.append(vocab)
