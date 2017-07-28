@@ -4,23 +4,32 @@
 # Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 2017
 # License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
 
-# NOTE: I've limited the number of replacements to the num of vocabs just so that this won't screw things just in case
-# NOTE: This script unsuspends suspended cards as well but doesn't work for some vocabs dunno why
-
 from aqt.qt import *
 from aqt import mw
 from aqt.utils import showInfo          # TODO: temporary import
+from aqt.addons import AddonManager
 import csv                              # practically useless on py 2.7
 import os
 import codecs
 import logging
 
+__version__ = '0.0'
+# July 26 2017
+
+HOTKEY = 'Shift+P'
+TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab_add-on_for_Anki'
+
+# ===================== DO NOT EDIT BEYOND THIS LINE ===================== #
 LOG_FORMAT = '%(levelname)s \t| %(asctime)s: \t%(message)s'
 
-CUR_WDIR = os.path.expanduser('~/Documents/Anki/addons')
-NEW_PATH = os.path.join(CUR_WDIR, 'logging.log')
+addon_mgr_instance = AddonManager(mw)
+ADD_ON_PATH = addon_mgr_instance.addonsFolder()
 
-showInfo(os.path.abspath(NEW_PATH))
+if not os.path.exists(ADD_ON_PATH + '/push_existing'):
+    os.makedirs(ADD_ON_PATH + '/push_existing')
+NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
+NEW_PATH = os.path.join(NEW_PATH, 'logging.log')
+
 # DEBUG 10 INFO 20 WARNING 30 ERROR 40 CRITICAL 50
 logging.basicConfig(filename=NEW_PATH,
                     level=logging.DEBUG,
@@ -28,7 +37,7 @@ logging.basicConfig(filename=NEW_PATH,
 
 logger = logging.getLogger()
 
-# logger.debug('Hehe')
+del addon_mgr_instance
 
 # Credits to Alex Yatskov (foosoft)
 # I'm not even sure what this does
@@ -38,12 +47,6 @@ try:
 except AttributeError:
     def _from_utf8(s):
         return s
-
-__version__ = '0.0'
-# July 26 2017
-
-HOTKEY = 'Shift+P'
-TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab_add-on_for_Anki'
 
 # ===================== TEMPORARY STUFF ===================== #
 # just so I can get the namespaces inside  Collection
@@ -83,6 +86,7 @@ if False:
 # TODO: (VERY IMPORTANT) Include a log file of the replacements done, number of replacements, what were not replaced, etc.
 
 # TODO: Add functionality for user to decide whether or not to add tags to the notes
+# TODO: test for other delimiters
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -181,8 +185,6 @@ class TextEditor(QDialog):
         :param encoding:    'utf-8' by default
         :return:
         """
-        self.reset_list()
-        del self.list_of_vocabs[:]
 
         filename = QFileDialog.getOpenFileName(self,
                                                'Open CSV',
@@ -191,6 +193,9 @@ class TextEditor(QDialog):
                                                )
 
         if filename:
+            self.reset_list()
+            del self.list_of_vocabs[:]
+
             with codecs.open(filename, 'r', encoding=encoding) as file:
                 contents = file.read()
                 csvreader = contents.split(delimiter)
@@ -202,8 +207,10 @@ class TextEditor(QDialog):
                 # for line in file:
                 #     self.list_of_vocabs.append(line)
 
-        if self.list_of_vocabs:
+        if filename and self.list_of_vocabs:
             showInfo('Successfully Imported {} lines from CSV'.format(len(self.list_of_vocabs)))
+        elif not filename and self.list_of_vocabs:
+            showInfo('Nothing Imported\nThe contents of your previous import are retained')
         else:
             showInfo('Nothing Imported')
 
@@ -285,7 +292,9 @@ class TextEditor(QDialog):
         ctr = 0
 
         list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs]
-        logger.info('Imported from CSV: ' +
+        logger.info('================================================================='
+                    'Version {}\n'.format(__version__) +
+                    'Imported from CSV: \t' +
                     ', '.join(vocab.encode('utf-8') for vocab in self.list_of_vocabs)
                     )
 
@@ -333,7 +342,7 @@ class TextEditor(QDialog):
                         mw.col.sched.unsuspendCards([card_id])
                         mw.col.sched.sortCards([card_id], start=ctr, step=1)
 
-                        logger.info('Rescheduled card: {} with cardID: {}'.format(vocab.encode('utf-8'), card_id))
+                        logger.info('Rescheduled card: {} with cardID: \t{}'.format(vocab.encode('utf-8'), card_id))
 
                         if self.enable_add_note_tag:
                             n = card.note()
@@ -343,7 +352,9 @@ class TextEditor(QDialog):
 
                     elif card.type != 0:
                         self.matchned_but_not_rescheduled.append(vocab)
-                        logger.info('Card matched but is already learning/due: {}'.format(vocab.encode('utf-8')))
+                        logger.info('Card matched but is already learning/due: \t{}, \tcardID: {}'
+                                    .format(vocab.encode('utf-8'), card_id)
+                                    )
 
                 if ctr == len(list_of_vocabs) + 1:
                     break
