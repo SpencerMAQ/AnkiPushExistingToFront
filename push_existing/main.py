@@ -13,6 +13,22 @@ from aqt.utils import showInfo          # TODO: temporary import
 import csv                              # practically useless on py 2.7
 import os
 import codecs
+import logging
+
+LOG_FORMAT = '%(levelname)s \t| %(asctime)s: \t%(message)s'
+
+CUR_WDIR = os.path.expanduser('~/Documents/Anki/addons')
+NEW_PATH = os.path.join(CUR_WDIR, 'logging.log')
+
+showInfo(os.path.abspath(NEW_PATH))
+# DEBUG 10 INFO 20 WARNING 30 ERROR 40 CRITICAL 50
+logging.basicConfig(filename=NEW_PATH,
+                    level=logging.DEBUG,
+                    format=LOG_FORMAT)
+
+logger = logging.getLogger()
+
+# logger.debug('Hehe')
 
 # Credits to Alex Yatskov (foosoft)
 # I'm not even sure what this does
@@ -176,8 +192,6 @@ class TextEditor(QDialog):
 
         if filename:
             with codecs.open(filename, 'r', encoding=encoding) as file:
-                # FIXME: program doesn't resched the first vocab in the line
-
                 contents = file.read()
                 csvreader = contents.split(delimiter)
 
@@ -271,6 +285,9 @@ class TextEditor(QDialog):
         ctr = 0
 
         list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs]
+        logger.info('Imported from CSV: ' +
+                    ', '.join(vocab.encode('utf-8') for vocab in self.list_of_vocabs)
+                    )
 
         if not list_of_vocabs:
             showInfo('The List is empty\n'
@@ -287,7 +304,8 @@ class TextEditor(QDialog):
 
         if not list_of_deck_vocabs_20k:
             showInfo('The model {} contains no notes\n'
-                     'Please try a new note type'.format(self.selected_model))
+                     'Please try a new note type'.format(self.selected_model)
+                     )
             return
 
         self.number_of_notes_in_deck = len(list_of_deck_vocabs_20k)
@@ -315,6 +333,8 @@ class TextEditor(QDialog):
                         mw.col.sched.unsuspendCards([card_id])
                         mw.col.sched.sortCards([card_id], start=ctr, step=1)
 
+                        logger.info('Rescheduled card: {} with cardID: {}'.format(vocab.encode('utf-8'), card_id))
+
                         if self.enable_add_note_tag:
                             n = card.note()
                             n.addTag(TAG_TO_ADD)
@@ -323,21 +343,23 @@ class TextEditor(QDialog):
 
                     elif card.type != 0:
                         self.matchned_but_not_rescheduled.append(vocab)
+                        logger.info('Card matched but is already learning/due: {}'.format(vocab.encode('utf-8')))
 
                 if ctr == len(list_of_vocabs) + 1:
                     break
 
             else:
                 self.unmatched_vocab.append(vocab)
+                logger.info('No match found: {}'.format(vocab.encode('utf-8')))
 
         mw.reset()
-        showInfo('Successfully Rescheduled {} cards'.format(self.number_of_replacements))
-
-        if self.matchned_but_not_rescheduled:
-            showInfo('Did not reschedule {} cards because they were either learning or due cards'
-                     .format(len(self.matchned_but_not_rescheduled)))
-        if self.unmatched_vocab:
-            showInfo('Unable to find {} cards'.format(len(self.unmatched_vocab)))
+        showInfo('Successfully Rescheduled {} cards\n'
+                 'Did not reschedule {} cards because they were either learning or due cards\n'
+                 'Unable to find {} cards'.format(self.number_of_replacements,
+                                                  len(self.matchned_but_not_rescheduled),
+                                                  len(self.unmatched_vocab)
+                                                  )
+                 )
 
 
 def init_window():
