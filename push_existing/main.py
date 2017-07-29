@@ -6,12 +6,24 @@
 
 from aqt.qt import *
 from aqt import mw
-from aqt.utils import showInfo          # TODO: temporary import
+from aqt.utils import showInfo
 from aqt.addons import AddonManager
 import csv                              # practically useless on py 2.7
 import os
-import codecs
+import sys
 import logging
+
+if sys.version_info[0] == 3 and sys.version_info[1] >= 5:
+    from functools import lru_cache
+
+# Credits to Alex Yatskov (foosoft)
+# I'm not even sure what this does
+from PyQt4 import QtCore
+try:
+    _from_utf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    def _from_utf8(s):
+        return s
 
 __version__ = '0.0'
 # July 26 2017
@@ -38,15 +50,6 @@ logging.basicConfig(filename=NEW_PATH,
 logger = logging.getLogger()
 
 del addon_mgr_instance
-
-# Credits to Alex Yatskov (foosoft)
-# I'm not even sure what this does
-from PyQt4 import QtCore
-try:
-    _from_utf8 = QtCore.QString.fromUtf8
-except AttributeError:
-    def _from_utf8(s):
-        return s
 
 # ===================== TEMPORARY STUFF ===================== #
 # just so I can get the namespaces inside  Collection
@@ -87,6 +90,7 @@ if False:
 
 # TODO: Add functionality for user to decide whether or not to add tags to the notes
 # TODO: test for other delimiters
+# TODO: Button for opening log file
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -124,46 +128,54 @@ class TextEditor(QDialog):
         # setWindowTitle is probably a super method from QtGui
         self.setWindowTitle('Push Existing Vocab add-on')
 
-        self.init_buttons()
-        self.init_signals()
-        self.init_ui()
+        self._init_buttons()
+        self._init_signals()
+        self._init_ui()
 
-    def init_buttons(self):
+    def _init_buttons(self):
         # ===================== PERMANENT ===================== #
         self.import_btn = QPushButton('Import CSV')
-        self.clear_list = QPushButton('Clear List')
+        self.show_contents = QPushButton('Show Contents')
         self.anki_based_reschedule_button = QPushButton('Anki-Based Resched')
 
-        self.show_contents = QPushButton('Show Contents')
+        self.open_logfile_button = QPushButton('Open Log')
+        self.clear_list = QPushButton('Clear List')
 
+        # FIXME: Not needed anymore
         # ===================== TO BE TRANSFERRED TO LOGGING ===================== #
         self.show_unmatched_cards = QPushButton('Cards without any matches')
         self.show_reschd_matched_cards = QPushButton('Show Rescheduled Matches')
         self.show_nonrschd_matched_cards = QPushButton('Show Matched but not Reschedued')
 
-    def init_signals(self):
+    def _init_signals(self):
         # ===================== PERMANENT ===================== #
-        self.clear_list.clicked.connect(self.reset_list)
-        self.show_contents.clicked.connect(self.show_contents_signal)
         self.import_btn.clicked.connect(lambda: self.import_csv(self.delimiter, self.encoding))
+        self.show_contents.clicked.connect(self.show_contents_signal)
         self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
+
+        self.open_logfile_button.clicked.connect(self.open_log_file)
+        self.clear_list.clicked.connect(self.reset_list)
         # TODO: add an additional LineEdit(or combobox) box where I can input what the delimiter will be
 
         self.show_unmatched_cards.clicked.connect(self.show_not_matched)
         self.show_reschd_matched_cards.clicked.connect(self.show_rescheduled)
         self.show_nonrschd_matched_cards.clicked.connect(self.show_not_rescheduled)
 
-    def init_ui(self):
+    def _init_ui(self):
         v_layout = QVBoxLayout()
         h_layout = QHBoxLayout()
 
         # buttons lined horizontally to be added later to v_layout
         # ===================== PERMANENT ===================== #
         h_layout.addWidget(self.import_btn)
-        h_layout.addWidget(self.clear_list)
         h_layout.addWidget(self.show_contents)
         h_layout.addWidget(self.anki_based_reschedule_button)
 
+        h_layout.addWidget(self.open_logfile_button)
+        h_layout.addWidget(self.clear_list)
+
+        # FIXME: Transferred to logging
+        # ===================== PERMANENT ===================== #
         h_layout.addWidget(self.show_unmatched_cards)
         h_layout.addWidget(self.show_reschd_matched_cards)
         h_layout.addWidget(self.show_nonrschd_matched_cards)
@@ -196,16 +208,19 @@ class TextEditor(QDialog):
             self.reset_list()
             del self.list_of_vocabs[:]
 
-            with codecs.open(filename, 'r', encoding=encoding) as file:
-                contents = file.read()
-                csvreader = contents.split(delimiter)
+            # EAFP Approach as opposed to LBYL
+            try:
+                if sys.version_info[0] == 2:
+                    import codecs
+                    with codecs.open(filename, 'r', encoding=encoding) as file:
+                        self.__read_files(file, delimiter)
 
-                # is it because of py 2.7 that csvreader can't parse unicode?
-                for line in csvreader:
-                    self.list_of_vocabs.append(line.strip('\r'))
+                elif sys.version_info[0] == 3:
+                    with open(filename, 'r', encoding=encoding) as file:
+                        self.__read_files(file, delimiter)
 
-                # for line in file:
-                #     self.list_of_vocabs.append(line)
+            except OSError as e:
+                showInfo('Could not process the file because {}'.format(str(e)))
 
         if filename and self.list_of_vocabs:
             showInfo('Successfully Imported {} lines from CSV'.format(len(self.list_of_vocabs)))
@@ -213,6 +228,24 @@ class TextEditor(QDialog):
             showInfo('Nothing Imported\nThe contents of your previous import are retained')
         else:
             showInfo('Nothing Imported')
+
+    def __read_files(self, file, delimiter):
+        """
+        It's annoying that I have to define a new method
+        Just because it won't recognize self inside the nested function
+
+        :param file:
+        :param delimiter:
+        :return:
+        """
+        contents = file.read()
+        csvreader = contents.split(delimiter)
+
+        for line in csvreader:
+            self.list_of_vocabs.append(line.strip('\r'))
+
+        # for line in file:
+        #     self.list_of_vocabs.append(line)
 
     def show_contents_signal(self):
         # FiXME: Should show the entire table, not one by one
@@ -269,6 +302,15 @@ class TextEditor(QDialog):
         else:
             showInfo('None')
 
+    @staticmethod
+    def open_log_file():
+        if sys.version_info[0] == 3:
+            from webbrowser import open
+            open(NEW_PATH)
+
+        elif sys.version_info[0] == 2:
+            os.startfile(NEW_PATH)
+
     # NOTE: this seems to be slower than my original function
     # TODO: I might recode this to use executemany instead, I doubt that'll speed things up though
     def anki_based_reschedule(self):
@@ -292,10 +334,10 @@ class TextEditor(QDialog):
         ctr = 0
 
         list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs]
-        logger.info('================================================================='
+        logger.info('=================================================================\n'
                     'Version {}\n'.format(__version__) +
                     'Imported from CSV: \t' +
-                    ', '.join(vocab.encode('utf-8') for vocab in self.list_of_vocabs)
+                    ', '.join(vocab.encode(self.encoding) for vocab in self.list_of_vocabs)
                     )
 
         if not list_of_vocabs:
@@ -342,7 +384,8 @@ class TextEditor(QDialog):
                         mw.col.sched.unsuspendCards([card_id])
                         mw.col.sched.sortCards([card_id], start=ctr, step=1)
 
-                        logger.info('Rescheduled card: {} with cardID: \t{}'.format(vocab.encode('utf-8'), card_id))
+                        logger.info('Rescheduled card: {} with cardID: \t{}'
+                                    .format(vocab.encode(self.encoding), card_id))
 
                         if self.enable_add_note_tag:
                             n = card.note()
@@ -353,7 +396,7 @@ class TextEditor(QDialog):
                     elif card.type != 0:
                         self.matchned_but_not_rescheduled.append(vocab)
                         logger.info('Card matched but is already learning/due: \t{}, \tcardID: {}'
-                                    .format(vocab.encode('utf-8'), card_id)
+                                    .format(vocab.encode(self.encoding), card_id)
                                     )
 
                 if ctr == len(list_of_vocabs) + 1:
@@ -361,7 +404,7 @@ class TextEditor(QDialog):
 
             else:
                 self.unmatched_vocab.append(vocab)
-                logger.info('No match found: {}'.format(vocab.encode('utf-8')))
+                logger.info('No match found: {}'.format(vocab.encode(self.encoding)))
 
         mw.reset()
         showInfo('Successfully Rescheduled {} cards\n'
