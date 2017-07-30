@@ -136,6 +136,19 @@ class TextEditor(QDialog):
         self.open_logfile_button = QPushButton('Open Log')
         self.clear_list = QPushButton('Clear List')
 
+        # ===================== PERMANENT ===================== #
+        self._models_combo = QComboBox()
+        self._models_combo.addItems(['Japanese-1b811 example_sentences', 'Placeholder 1'])
+
+        self._fields_combo = QComboBox()
+        self._fields_combo.addItems(['Expression_Original_Unedited', 'Placeholder 1'])
+
+        self._cards_to_resch_combo = QComboBox()
+        self._cards_to_resch_combo.addItems(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'All'])
+
+        self._delimiter_combo = QComboBox()
+        self._delimiter_combo.addItems([r'\n', r'\t', r' ', r', ', r',', r';', r'; '])
+
         # FIXME: Not needed anymore
         # ===================== TO BE TRANSFERRED TO LOGGING ===================== #
         self.show_unmatched_cards = QPushButton('Cards without any matches')
@@ -157,7 +170,15 @@ class TextEditor(QDialog):
         self.show_nonrschd_matched_cards.clicked.connect(self.show_not_rescheduled)
 
     def _init_ui(self):
+        combo_layout = QHBoxLayout()
+        combo_layout.addWidget(self._models_combo)
+        combo_layout.addWidget(self._fields_combo)
+        combo_layout.addWidget(self._cards_to_resch_combo)
+        combo_layout.addWidget(self._delimiter_combo)
+
         v_layout = QVBoxLayout()
+        v_layout.addLayout(combo_layout)
+
         h_layout = QHBoxLayout()
 
         # buttons lined horizontally to be added later to v_layout
@@ -181,6 +202,7 @@ class TextEditor(QDialog):
         v_layout.addLayout(h_layout)
 
         self.setLayout(v_layout)
+        self.setFocus()
         self.show()
 
     def import_csv(self, delimiter, encoding):
