@@ -136,7 +136,7 @@ class TextEditor(QDialog):
         self.open_logfile_button = QPushButton('Open Log')
         self.clear_list = QPushButton('Clear List')
 
-        # ===================== PERMANENT ===================== #
+        # ===================== COMBOX BOXES ===================== #
         self._models_combo = QComboBox()
         self._models_combo.addItems(['Japanese-1b811 example_sentences', 'Placeholder 1'])
 
@@ -155,7 +155,7 @@ class TextEditor(QDialog):
                                        )
 
         self._num_imported_cards_lcd = QLCDNumber()
-        self._field_to_match_lcd = QLCDNumber()
+        self._num_notes_in_deck_lcd = QLCDNumber()
         self._num_cards_succ_resch_lcd = QLCDNumber()
         self._num_cards_found_learning_due_lcd = QLCDNumber()
         self._num_cards_no_matches_lcd = QLCDNumber()
@@ -193,12 +193,39 @@ class TextEditor(QDialog):
         separator2.setLineWidth(0.1)
 
         # ===================== COMBOBOXES ===================== #
-        combo_layout = QHBoxLayout()
-        combo_layout.addWidget(self._models_combo)
-        combo_layout.addWidget(self._fields_combo)
-        combo_layout.addWidget(self._cards_to_resch_combo)
-        combo_layout.addWidget(self._delimiter_combo)
+        # combo_layout.addWidget(self._models_combo)
+        # combo_layout.addWidget(self._fields_combo)
+        # combo_layout.addWidget(self._cards_to_resch_combo)
+        # combo_layout.addWidget(self._delimiter_combo)
 
+        # ===================== COMBOBOX LAYOUTS ===================== #
+        combo_ver_layout_1 = QVBoxLayout()
+        combo_ver_lay1_label = QLabel('Models')
+        combo_ver_layout_1.addWidget(combo_ver_lay1_label)
+        combo_ver_layout_1.addWidget(self._models_combo)
+
+        combo_ver_layout_2 = QVBoxLayout()
+        combo_ver_lay2_label = QLabel('Field to Match')
+        combo_ver_layout_2.addWidget(combo_ver_lay2_label)
+        combo_ver_layout_2.addWidget(self._fields_combo)
+
+        combo_ver_layout_3 = QVBoxLayout()
+        combo_ver_lay3_label = QLabel('Num of Cards in Note to Push')
+        combo_ver_layout_3.addWidget(combo_ver_lay3_label)
+        combo_ver_layout_3.addWidget(self._cards_to_resch_combo)
+
+        combo_ver_layout_4 = QVBoxLayout()
+        combo_ver_lay4_label = QLabel('Delimiter')
+        combo_ver_layout_4.addWidget(combo_ver_lay4_label)
+        combo_ver_layout_4.addWidget(self._delimiter_combo)
+
+        combo_layout = QHBoxLayout()
+        combo_layout.addLayout(combo_ver_layout_1)
+        combo_layout.addLayout(combo_ver_layout_2)
+        combo_layout.addLayout(combo_ver_layout_3)
+        combo_layout.addLayout(combo_ver_layout_4)
+
+        # ===================== LCD BOXES ===================== #
         lcd_ver_layout_1 = QVBoxLayout()
         ver_layout_1_label = QLabel('Imported')
         lcd_ver_layout_1.addWidget(ver_layout_1_label)
@@ -207,7 +234,7 @@ class TextEditor(QDialog):
         lcd_ver_layout_2 = QVBoxLayout()
         ver_layout_2_label = QLabel('Notes in Model')
         lcd_ver_layout_2.addWidget(ver_layout_2_label)
-        lcd_ver_layout_2.addWidget(self._field_to_match_lcd)
+        lcd_ver_layout_2.addWidget(self._num_notes_in_deck_lcd)
 
         lcd_ver_layout_3 = QVBoxLayout()
         ver_layout_3_label = QLabel('Rescheduled')
@@ -296,7 +323,9 @@ class TextEditor(QDialog):
                 showInfo('Could not process the file because {}'.format(str(e)))
 
         if filename and self.list_of_vocabs:
+            self.reset_lcd_display()
             showInfo('Successfully Imported {} lines from CSV'.format(len(self.list_of_vocabs)))
+            self._num_imported_cards_lcd.display(len(self.list_of_vocabs))
         elif not filename and self.list_of_vocabs:
             showInfo('Nothing Imported\nThe contents of your previous import are retained')
         else:
@@ -350,6 +379,14 @@ class TextEditor(QDialog):
             del self.list_of_vocabs[:]
             showInfo('Succesfully reset the list of cards\n'
                      'Please import a text file to fill the list again')
+            self.reset_lcd_display()
+
+    def reset_lcd_display(self):
+        self._num_imported_cards_lcd.display(0)
+        self._num_notes_in_deck_lcd.display(0)
+        self._num_cards_succ_resch_lcd.display(0)
+        self._num_cards_found_learning_due_lcd.display(0)
+        self._num_cards_no_matches_lcd.display(0)
 
     def show_rescheduled(self):
         if self.matched_vocab:
@@ -484,6 +521,10 @@ class TextEditor(QDialog):
                                                   len(self.unmatched_vocab)
                                                   )
                  )
+        self._num_notes_in_deck_lcd.display(self.number_of_notes_in_deck)
+        self._num_cards_succ_resch_lcd.display(self.number_of_replacements)
+        self._num_cards_found_learning_due_lcd.display(len(self.matchned_but_not_rescheduled))
+        self._num_cards_no_matches_lcd.display(len(self.unmatched_vocab))
 
 
 def init_window():
