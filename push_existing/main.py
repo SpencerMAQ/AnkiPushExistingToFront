@@ -118,7 +118,7 @@ class TextEditor(QDialog):
         self.encoding = 'UTF-8'
 
         # FIXME: Not needed at all
-        self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
+        # self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
 
         # setWindowTitle is probably a super method from QtGui
         self.setWindowTitle('Push Existing Vocab add-on')
@@ -147,13 +147,24 @@ class TextEditor(QDialog):
         self._cards_to_resch_combo.addItems(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'All'])
 
         self._delimiter_combo = QComboBox()
-        self._delimiter_combo.addItems([r'\n', r'\t', r' ', r', ', r',', r';', r'; '])
+        self._delimiter_combo.addItems([r'\n', r'\t', 'One Whitespace',
+                                        '", "(Comma then space)',
+                                        '","(Comma without space)',
+                                        r'";"(Semicolon without space)',
+                                        r'"; "(Semicolon with space)']
+                                       )
+
+        self._num_imported_cards_lcd = QLCDNumber()
+        self._field_to_match_lcd = QLCDNumber()
+        self._num_cards_succ_resch_lcd = QLCDNumber()
+        self._num_cards_found_learning_due_lcd = QLCDNumber()
+        self._num_cards_no_matches_lcd = QLCDNumber()
 
         # FIXME: Not needed anymore
         # ===================== TO BE TRANSFERRED TO LOGGING ===================== #
-        self.show_unmatched_cards = QPushButton('Cards without any matches')
-        self.show_reschd_matched_cards = QPushButton('Show Rescheduled Matches')
-        self.show_nonrschd_matched_cards = QPushButton('Show Matched but not Reschedued')
+        # self.show_unmatched_cards = QPushButton('Cards without any matches')
+        # self.show_reschd_matched_cards = QPushButton('Show Rescheduled Matches')
+        # self.show_nonrschd_matched_cards = QPushButton('Show Matched but not Reschedued')
 
     def _init_signals(self):
         # ===================== PERMANENT ===================== #
@@ -163,21 +174,67 @@ class TextEditor(QDialog):
 
         self.open_logfile_button.clicked.connect(self.open_log_file)
         self.clear_list.clicked.connect(self.reset_list)
-        # TODO: add an additional LineEdit(or combobox) box where I can input what the delimiter will be
 
-        self.show_unmatched_cards.clicked.connect(self.show_not_matched)
-        self.show_reschd_matched_cards.clicked.connect(self.show_rescheduled)
-        self.show_nonrschd_matched_cards.clicked.connect(self.show_not_rescheduled)
+        # FIXME: Temp
+        # self.show_unmatched_cards.clicked.connect(self.show_not_matched)
+        # self.show_reschd_matched_cards.clicked.connect(self.show_rescheduled)
+        # self.show_nonrschd_matched_cards.clicked.connect(self.show_not_rescheduled)
 
     def _init_ui(self):
+        # ===================== SEPARATOR ===================== #
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
+        separator.setLineWidth(0.1)
+
+        separator2 = QFrame()
+        separator2.setFrameShape(QFrame.HLine)
+        separator2.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
+        separator2.setLineWidth(0.1)
+
+        # ===================== COMBOBOXES ===================== #
         combo_layout = QHBoxLayout()
         combo_layout.addWidget(self._models_combo)
         combo_layout.addWidget(self._fields_combo)
         combo_layout.addWidget(self._cards_to_resch_combo)
         combo_layout.addWidget(self._delimiter_combo)
 
+        lcd_ver_layout_1 = QVBoxLayout()
+        ver_layout_1_label = QLabel('Imported')
+        lcd_ver_layout_1.addWidget(ver_layout_1_label)
+        lcd_ver_layout_1.addWidget(self._num_imported_cards_lcd)
+
+        lcd_ver_layout_2 = QVBoxLayout()
+        ver_layout_2_label = QLabel('Notes in Model')
+        lcd_ver_layout_2.addWidget(ver_layout_2_label)
+        lcd_ver_layout_2.addWidget(self._field_to_match_lcd)
+
+        lcd_ver_layout_3 = QVBoxLayout()
+        ver_layout_3_label = QLabel('Rescheduled')
+        lcd_ver_layout_3.addWidget(ver_layout_3_label)
+        lcd_ver_layout_3.addWidget(self._num_cards_succ_resch_lcd)
+
+        lcd_ver_layout_4 = QVBoxLayout()
+        ver_layout_4_label = QLabel('Already Learning/Due')
+        lcd_ver_layout_4.addWidget(ver_layout_4_label)
+        lcd_ver_layout_4.addWidget(self._num_cards_found_learning_due_lcd)
+
+        lcd_ver_layout_5 = QVBoxLayout()
+        ver_layout_5_label = QLabel('No Match')
+        lcd_ver_layout_5.addWidget(ver_layout_5_label)
+        lcd_ver_layout_5.addWidget(self._num_cards_no_matches_lcd)
+
+        lcd_layout = QHBoxLayout()
+        lcd_layout.addLayout(lcd_ver_layout_1)
+        lcd_layout.addLayout(lcd_ver_layout_2)
+        lcd_layout.addLayout(lcd_ver_layout_3)
+        lcd_layout.addLayout(lcd_ver_layout_4)
+        lcd_layout.addLayout(lcd_ver_layout_5)
+
         v_layout = QVBoxLayout()
         v_layout.addLayout(combo_layout)
+        v_layout.addWidget(separator)
+        v_layout.addLayout(lcd_layout)
 
         h_layout = QHBoxLayout()
 
@@ -191,14 +248,13 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.clear_list)
 
         # FIXME: Transferred to logging
-        # ===================== PERMANENT ===================== #
-        h_layout.addWidget(self.show_unmatched_cards)
-        h_layout.addWidget(self.show_reschd_matched_cards)
-        h_layout.addWidget(self.show_nonrschd_matched_cards)
+        # h_layout.addWidget(self.show_unmatched_cards)
+        # h_layout.addWidget(self.show_reschd_matched_cards)
+        # h_layout.addWidget(self.show_nonrschd_matched_cards)
 
-        # ===================== PERMANENT (V-Layout) ===================== #
-        v_layout.addWidget(self.vocabulary_text)
-
+        # FIXME: Temp
+        # v_layout.addWidget(self.vocabulary_text)
+        v_layout.addWidget(separator2)
         v_layout.addLayout(h_layout)
 
         self.setLayout(v_layout)
