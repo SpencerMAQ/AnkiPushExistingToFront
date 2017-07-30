@@ -69,15 +69,8 @@ if False:
 
 #  ===================== TO_DO_LIST ===================== #
 
-# TODO: Include total count of vocab pasted
-# TODO: total count of cards brought to front
-# TODO: display number of cards that failed to be brought to front
 # TODO: maybe this'd work better if you did by note type instead of deck? (or maybe both)
-# TODO: display the vocabs that were found (and total number)
-# TODO: display the vocabs that were NOT found (and total number)
 
-# TODO: drop-down menu of decks and note types
-# TODO: drop-down menu of delimiter
 # TODO: Make this app use a QMainWindow by creating a new QApplication instance
 
 # TODO: include functionaly for user to push only CERTAIN CARDS based on the names of the cards (Diffucult)
@@ -100,25 +93,22 @@ class TextEditor(QDialog):
         # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
         super(TextEditor, self).__init__(parent)
 
-        self.matched_vocab = []
-        self.list_of_vocabs = []
-        self.unmatched_vocab = []
-        self.matchned_but_not_rescheduled = []
+        self.matched_vocab                          = []
+        self.list_of_vocabs                         = []
+        self.unmatched_vocab                        = []
+        self.matchned_but_not_rescheduled           = []
 
         # associated with a drop-down widget where the drop-down displays all decks and subdecks
-        self.selected_deck = ''                                 # TODO: to be filled in by a signal
-        self.field_tomatch = ''                                 # TODO: to be filled in by a signal
-        self.selected_model = ''                                # TODO: to be filled in by a signal
-        self.number_of_cards_to_resched_per_note = 1
-        self.number_of_notes_in_deck = 0
-        self.enable_add_note_tag = True                         # TODO: RadioButtons
-        self.delimiter = '\n'
+        self.selected_deck                          = ''        # TODO: to be filled in by a signal
+        self.field_tomatch                          = ''        # TODO: to be filled in by a signal
+        self.selected_model                         = ''        # TODO: to be filled in by a signal
+        self.number_of_cards_to_resched_per_note    = 1
+        self.number_of_notes_in_deck                = 0
+        self.enable_add_note_tag                    = True      # TODO: RadioButtons
+        self.delimiter                              = '\n'
+        self.encoding                               = 'UTF-8'
         # self.delimiter = '\r\n'
         # self.encoding = 'UTF-8-SIG'
-        self.encoding = 'UTF-8'
-
-        # FIXME: Not needed at all
-        # self.vocabulary_text = QPlainTextEdit(self)             # QTextEdit 1st arg = parent
 
         # setWindowTitle is probably a super method from QtGui
         self.setWindowTitle('Push Existing Vocab add-on')
@@ -128,7 +118,6 @@ class TextEditor(QDialog):
         self._init_ui()
 
     def _init_buttons(self):
-        # ===================== PERMANENT ===================== #
         self.import_btn = QPushButton('Import CSV')
         self.show_contents = QPushButton('Show Contents')
         self.anki_based_reschedule_button = QPushButton('Anki-Based Resched')
@@ -147,7 +136,9 @@ class TextEditor(QDialog):
         self._cards_to_resch_combo.addItems(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'All'])
 
         self._delimiter_combo = QComboBox()
-        self._delimiter_combo.addItems([r'\n', r'\t', 'One Whitespace',
+        self._delimiter_combo.addItems([r'\n',
+                                        r'\t',
+                                        'One Whitespace',
                                         '", "(Comma then space)',
                                         '","(Comma without space)',
                                         r'";"(Semicolon without space)',
@@ -160,25 +151,13 @@ class TextEditor(QDialog):
         self._num_cards_found_learning_due_lcd = QLCDNumber()
         self._num_cards_no_matches_lcd = QLCDNumber()
 
-        # FIXME: Not needed anymore
-        # ===================== TO BE TRANSFERRED TO LOGGING ===================== #
-        # self.show_unmatched_cards = QPushButton('Cards without any matches')
-        # self.show_reschd_matched_cards = QPushButton('Show Rescheduled Matches')
-        # self.show_nonrschd_matched_cards = QPushButton('Show Matched but not Reschedued')
-
     def _init_signals(self):
-        # ===================== PERMANENT ===================== #
         self.import_btn.clicked.connect(lambda: self.import_csv(self.delimiter, self.encoding))
         self.show_contents.clicked.connect(self.show_contents_signal)
         self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
 
         self.open_logfile_button.clicked.connect(self.open_log_file)
         self.clear_list.clicked.connect(self.reset_list)
-
-        # FIXME: Temp
-        # self.show_unmatched_cards.clicked.connect(self.show_not_matched)
-        # self.show_reschd_matched_cards.clicked.connect(self.show_rescheduled)
-        # self.show_nonrschd_matched_cards.clicked.connect(self.show_not_rescheduled)
 
     def _init_ui(self):
         # ===================== SEPARATOR ===================== #
@@ -192,15 +171,9 @@ class TextEditor(QDialog):
         separator2.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
         separator2.setLineWidth(0.1)
 
-        # ===================== COMBOBOXES ===================== #
-        # combo_layout.addWidget(self._models_combo)
-        # combo_layout.addWidget(self._fields_combo)
-        # combo_layout.addWidget(self._cards_to_resch_combo)
-        # combo_layout.addWidget(self._delimiter_combo)
-
         # ===================== COMBOBOX LAYOUTS ===================== #
         combo_ver_layout_1 = QVBoxLayout()
-        combo_ver_lay1_label = QLabel('Models')
+        combo_ver_lay1_label = QLabel('Models (Note Types)')
         combo_ver_layout_1.addWidget(combo_ver_lay1_label)
         combo_ver_layout_1.addWidget(self._models_combo)
 
@@ -266,7 +239,6 @@ class TextEditor(QDialog):
         h_layout = QHBoxLayout()
 
         # buttons lined horizontally to be added later to v_layout
-        # ===================== PERMANENT ===================== #
         h_layout.addWidget(self.import_btn)
         h_layout.addWidget(self.show_contents)
         h_layout.addWidget(self.anki_based_reschedule_button)
@@ -274,13 +246,6 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.open_logfile_button)
         h_layout.addWidget(self.clear_list)
 
-        # FIXME: Transferred to logging
-        # h_layout.addWidget(self.show_unmatched_cards)
-        # h_layout.addWidget(self.show_reschd_matched_cards)
-        # h_layout.addWidget(self.show_nonrschd_matched_cards)
-
-        # FIXME: Temp
-        # v_layout.addWidget(self.vocabulary_text)
         v_layout.addWidget(separator2)
         v_layout.addLayout(h_layout)
 
