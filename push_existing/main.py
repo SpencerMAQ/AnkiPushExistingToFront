@@ -331,16 +331,15 @@ class TextEditor(QDialog):
 
         mid = mw.col.models.byName(self.selected_model)['id']       # model ID
         nids = mw.col.findNotes('mid:' + str(mid))                  # returns a list of noteIds
-        ctr = 0
+        # ctr = 0
 
-        list_of_vocabs = [_from_utf8(vocab) for vocab in self.list_of_vocabs]
         logger.info('=================================================================\n'
                     'Version {}\n'.format(__version__) +
                     'Imported from CSV: \t' +
                     ', '.join(vocab.encode(self.encoding) for vocab in self.list_of_vocabs)
                     )
 
-        if not list_of_vocabs:
+        if not self.list_of_vocabs:
             showInfo('The List is empty\n'
                      'Please Import a File before clicking this button')
             return
@@ -361,9 +360,9 @@ class TextEditor(QDialog):
 
         self.number_of_notes_in_deck = len(list_of_deck_vocabs_20k)
 
-        for vocab in list_of_vocabs:
+        for vocab in self.list_of_vocabs:
             if vocab.strip() in list_of_deck_vocabs_20k:
-                nid = dict_of_note_first_fields[_from_utf8(vocab.strip())]
+                nid = dict_of_note_first_fields[vocab.strip()]
                 cids = mw.col.findCards('nid:' + str(nid))
 
                 # num of cards to resched per note (default = 1)
@@ -379,10 +378,10 @@ class TextEditor(QDialog):
                     if card.type == 0 or card.queue == -1 or card.queue == -2 or card.queue == -3:
                         self.matched_vocab.append(vocab)
                         self.number_of_replacements += 1
-                        ctr += 1
+                        # ctr += 1
 
                         mw.col.sched.unsuspendCards([card_id])
-                        mw.col.sched.sortCards([card_id], start=ctr, step=1)
+                        mw.col.sched.sortCards([card_id], start=self.number_of_replacements, step=1)
 
                         logger.info('Rescheduled card: {} with cardID: \t{}'
                                     .format(vocab.encode(self.encoding), card_id))
@@ -399,7 +398,7 @@ class TextEditor(QDialog):
                                     .format(vocab.encode(self.encoding), card_id)
                                     )
 
-                if ctr == len(list_of_vocabs) + 1:
+                if self.number_of_replacements == len(self.list_of_vocabs) + 1:
                     break
 
             else:
