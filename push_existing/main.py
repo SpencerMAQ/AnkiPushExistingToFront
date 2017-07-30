@@ -8,16 +8,15 @@ from aqt.qt import *
 from aqt import mw
 from aqt.utils import showInfo
 from aqt.addons import AddonManager
-import csv                              # practically useless on py 2.7
 import os
 import sys
+import json
 import logging
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 5:
     from functools import lru_cache
 
-# Credits to Alex Yatskov (foosoft)
-# I'm not even sure what this does
+# TODO: Code alternative for Py 3.5
 from PyQt4 import QtCore
 try:
     _from_utf8 = QtCore.QString.fromUtf8
@@ -26,10 +25,11 @@ except AttributeError:
         return s
 
 __version__ = '0.0'
-# July 26 2017
+# July 30 2017
 
 HOTKEY = 'Shift+P'
 TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
+
 
 # ===================== DO NOT EDIT BEYOND THIS LINE ===================== #
 LOG_FORMAT = '%(levelname)s \t| %(asctime)s: \t%(message)s'
@@ -43,18 +43,12 @@ NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
 NEW_PATH = os.path.join(NEW_PATH, 'logging.log')
 
 # DEBUG 10 INFO 20 WARNING 30 ERROR 40 CRITICAL 50
-logging.basicConfig(filename=NEW_PATH,
-                    level=logging.DEBUG,
-                    format=LOG_FORMAT)
-
+logging.basicConfig(filename=NEW_PATH, level=logging.DEBUG, format=LOG_FORMAT)
 logger = logging.getLogger()
 
 del addon_mgr_instance
 
 # ===================== TEMPORARY STUFF ===================== #
-# just so I can get the namespaces inside  Collection
-# manually typing them is very hard, and I'm very lazy
-
 if False:
     from PyQt5.QtWidgets import *
     from PyQt5.QtGui import *
@@ -65,7 +59,6 @@ if False:
             self.col = Collection('', log=True)
 
     mw = Temporary()
-# ===================== TEMPORARY STUFF ===================== #
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -80,6 +73,10 @@ if False:
 # TODO: Add functionality for user to decide whether or not to add tags to the notes
 # TODO: test for other delimiters
 
+# TODO: (IMPORTANT) Json for last saved preferences
+
+# TODO: (IMPORTANT) ComboBox for encoding of CSV
+
 #  ===================== TO_DO_LIST ===================== #
 
 
@@ -90,7 +87,6 @@ class TextEditor(QDialog):
         :param parent:      global mw from aqt
         """
 
-        # __init__ (self, QWidget parent = None, Qt.WindowFlags flags = 0)
         super(TextEditor, self).__init__(parent)
 
         self.matched_vocab                          = []
@@ -98,17 +94,17 @@ class TextEditor(QDialog):
         self.unmatched_vocab                        = []
         self.matchned_but_not_rescheduled           = []
 
-        # associated with a drop-down widget where the drop-down displays all decks and subdecks
+        # ===================== COMBOX BOXES ===================== #
         self.selected_deck                          = ''        # TODO: to be filled in by a signal
-        self.field_tomatch                          = ''        # TODO: to be filled in by a signal
         self.selected_model                         = ''        # TODO: to be filled in by a signal
+        self.field_tomatch                          = ''        # TODO: to be filled in by a signal
         self.number_of_cards_to_resched_per_note    = 1
+        self.delimiter                              = '\n'
+
         self.number_of_notes_in_deck                = 0
         self.enable_add_note_tag                    = True      # TODO: RadioButtons
-        self.delimiter                              = '\n'
         self.encoding                               = 'UTF-8'
         # self.delimiter = '\r\n'
-        # self.encoding = 'UTF-8-SIG'
 
         # setWindowTitle is probably a super method from QtGui
         self.setWindowTitle('Push Existing Vocab add-on')
@@ -127,9 +123,11 @@ class TextEditor(QDialog):
 
         # ===================== COMBOX BOXES ===================== #
         self._models_combo = QComboBox()
+        # FIXME: Should be filled based on fetch
         self._models_combo.addItems(['Japanese-1b811 example_sentences', 'Placeholder 1'])
 
         self._fields_combo = QComboBox()
+        # FIXME: Should be automatically filled
         self._fields_combo.addItems(['Expression_Original_Unedited', 'Placeholder 1'])
 
         self._cards_to_resch_combo = QComboBox()
@@ -141,15 +139,28 @@ class TextEditor(QDialog):
                                         'One Whitespace',
                                         '", "(Comma then space)',
                                         '","(Comma without space)',
-                                        r'";"(Semicolon without space)',
-                                        r'"; "(Semicolon with space)']
+                                        '";"(Semicolon without space)',
+                                        '"; "(Semicolon with space)']
                                        )
 
+        # FIXME: Not yet added to Layout (ENCODING)
+        self._encoding_combo = QComboBox()
+        self._encoding_combo.addItems(['UTF-8',
+                                       'UTF-8-SIG',
+                                       'Shift JIS']
+                                      )
+
+        # ===================== LCD BOXES ===================== #
         self._num_imported_cards_lcd = QLCDNumber()
+        self._num_imported_cards_lcd.setFixedHeight(43)
         self._num_notes_in_deck_lcd = QLCDNumber()
+        self._num_notes_in_deck_lcd.setFixedHeight(43)
         self._num_cards_succ_resch_lcd = QLCDNumber()
+        self._num_cards_succ_resch_lcd.setFixedHeight(43)
         self._num_cards_found_learning_due_lcd = QLCDNumber()
+        self._num_cards_found_learning_due_lcd.setFixedHeight(43)
         self._num_cards_no_matches_lcd = QLCDNumber()
+        self._num_cards_no_matches_lcd.setFixedHeight(43)
 
     def _init_signals(self):
         self.import_btn.clicked.connect(lambda: self.import_csv(self.delimiter, self.encoding))
@@ -159,8 +170,14 @@ class TextEditor(QDialog):
         self.open_logfile_button.clicked.connect(self.open_log_file)
         self.clear_list.clicked.connect(self.reset_list)
 
+        # ===================== COMBOX BOXES ===================== #
+        self._models_combo.currentIndexChanged.connect(self._selected_in_combo)
+        # self._fields_combo.currentIndexChanged.connect()
+        # self._cards_to_resch_combo.currentIndexChanged.connect()
+        # self._delimiter_combo.currentIndexChanged.connect()
+
     def _init_ui(self):
-        # ===================== SEPARATOR ===================== #
+        # ===================== SEPARATORS ===================== #
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
         separator.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
@@ -192,11 +209,17 @@ class TextEditor(QDialog):
         combo_ver_layout_4.addWidget(combo_ver_lay4_label)
         combo_ver_layout_4.addWidget(self._delimiter_combo)
 
+        combo_ver_layout_5 = QVBoxLayout()
+        combo_ver_lay5_label = QLabel('Encoding')
+        combo_ver_layout_5.addWidget(combo_ver_lay5_label)
+        combo_ver_layout_5.addWidget(self._encoding_combo)
+
         combo_layout = QHBoxLayout()
         combo_layout.addLayout(combo_ver_layout_1)
         combo_layout.addLayout(combo_ver_layout_2)
         combo_layout.addLayout(combo_ver_layout_3)
         combo_layout.addLayout(combo_ver_layout_4)
+        combo_layout.addLayout(combo_ver_layout_5)
 
         # ===================== LCD BOXES ===================== #
         lcd_ver_layout_1 = QVBoxLayout()
@@ -250,8 +273,18 @@ class TextEditor(QDialog):
         v_layout.addLayout(h_layout)
 
         self.setLayout(v_layout)
+        # self.setFixedSize(self.size())
+        self.setFixedHeight(199)
         self.setFocus()
         self.show()
+
+    def _selected_in_combo(self):
+        self.selected_model = self._models_combo.currentText()
+        self.field_tomatch = self._fields_combo.currentText()
+        self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
+        # FIXME: should depend on INDEX
+        self.delimiter = self._delimiter_combo.currentText()
+
 
     def import_csv(self, delimiter, encoding):
         """
@@ -500,6 +533,3 @@ run_action.setShortcut(QKeySequence(HOTKEY))
 run_action.triggered.connect(init_window)
 
 mw.form.menuTools.addAction(run_action)
-
-# TODO: vvv What's that?
-# https://www.python.org/dev/peps/pep-0350/
