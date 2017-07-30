@@ -36,9 +36,10 @@ LOG_FORMAT = '%(levelname)s \t| %(asctime)s: \t%(message)s'
 
 addon_mgr_instance = AddonManager(mw)
 ADD_ON_PATH = addon_mgr_instance.addonsFolder()
+PUSH_EXISTING_PATH = ADD_ON_PATH + '/push_existing'
 
-if not os.path.exists(ADD_ON_PATH + '/push_existing'):
-    os.makedirs(ADD_ON_PATH + '/push_existing')
+if not os.path.exists(PUSH_EXISTING_PATH):
+    os.makedirs(PUSH_EXISTING_PATH)
 NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
 NEW_PATH = os.path.join(NEW_PATH, 'logging.log')
 
@@ -74,6 +75,7 @@ if False:
 # TODO: test for other delimiters
 
 # TODO: (IMPORTANT) Json for last saved preferences
+# TODO: (IMPORTANT) QRadioButton
 
 # TODO: (IMPORTANT) ComboBox for encoding of CSV
 
@@ -121,7 +123,7 @@ class TextEditor(QDialog):
         self.open_logfile_button = QPushButton('Open Log')
         self.clear_list = QPushButton('Clear List')
 
-        # ===================== COMBOX BOXES ===================== #
+        # ===================== COMBOX BOXES and RADIO ===================== #
         self._models_combo = QComboBox()
         # FIXME: Should be filled based on fetch
         self._models_combo.addItems(['Japanese-1b811 example_sentences', 'Placeholder 1'])
@@ -143,7 +145,6 @@ class TextEditor(QDialog):
                                         '"; "(Semicolon with space)']
                                        )
 
-        # FIXME: Not yet added to Layout (ENCODING)
         self._encoding_combo = QComboBox()
         self._encoding_combo.addItems(['UTF-8',
                                        'UTF-8-SIG',
@@ -281,10 +282,11 @@ class TextEditor(QDialog):
     def _selected_in_combo(self):
         self.selected_model = self._models_combo.currentText()
         self.field_tomatch = self._fields_combo.currentText()
-        self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
+        # self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
         # FIXME: should depend on INDEX
-        self.delimiter = self._delimiter_combo.currentText()
+        # self.delimiter = self._delimiter_combo.currentText()
 
+        showInfo(self.selected_model)
 
     def import_csv(self, delimiter, encoding):
         """
@@ -431,13 +433,22 @@ class TextEditor(QDialog):
         :return:    None
         """
         # FIXME: Temp, will replace with combobox
-        self.field_tomatch = 'Expression_Original_Unedited'
-        self.selected_model = 'Japanese-1b811 example_sentences'
+        # self.field_tomatch = 'Expression_Original_Unedited'
+        # self.selected_model = 'Japanese-1b811 example_sentences'
 
         self.number_of_replacements = 0
         self.reset_list()
 
-        mid = mw.col.models.byName(self.selected_model)['id']       # model ID
+        try:
+            mid = mw.col.models.byName(self.selected_model)['id']       # model ID
+        except TypeError:
+            showInfo('Please Choose a Note Type First')
+            return
+
+        if not self.field_tomatch:
+            showInfo('Please Select a Field to Match first')
+            return
+
         nids = mw.col.findNotes('mid:' + str(mid))                  # returns a list of noteIds
 
         logger.info('=================================================================\n'
@@ -524,6 +535,27 @@ class TextEditor(QDialog):
         self._num_cards_found_learning_due_lcd.display(len(self.matchned_but_not_rescheduled))
         self._num_cards_no_matches_lcd.display(len(self.unmatched_vocab))
 
+    def closeEvent(self, QCloseEvent):
+        # showInfo(QCloseEvent)
+        # https: // stackoverflow.com / questions / 14834494 / pyqt - clicking - x - doesnt - trigger - closeevent
+        # FIXME: Create a Yes or No Prompt, # Yes = override json, # No = preserve json
+        # showInfo('Would you like to save your settings?')
+
+        reply = QMessageBox.question(self, 'Prompt', 'Would you like to save your settings?',
+                                     QMessageBox.Yes, QMessageBox.No)
+
+        # FIXME: check first if the file exists, otherwise create it
+        conf = {}
+
+        # False fo
+        if reply == QMessageBox.Yes:
+            showInfo('Saving File to JSON')
+            with open(PUSH_EXISTING_PATH + 'push_existing.json', mode='w') as fh:
+                json.dump(conf,
+                          fh,
+                          indent=4,
+                          separators=(',', ': ')
+                          )
 
 def init_window():
     mw.texteditor = TextEditor(mw)
