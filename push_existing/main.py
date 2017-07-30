@@ -29,7 +29,7 @@ __version__ = '0.0'
 # July 26 2017
 
 HOTKEY = 'Shift+P'
-TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab_add-on_for_Anki'
+TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
 
 # ===================== DO NOT EDIT BEYOND THIS LINE ===================== #
 LOG_FORMAT = '%(levelname)s \t| %(asctime)s: \t%(message)s'
@@ -76,8 +76,6 @@ if False:
 # TODO: display the vocabs that were found (and total number)
 # TODO: display the vocabs that were NOT found (and total number)
 
-# TODO: (IMPORTANT) add functionality to tag the cards that were moved by adding tag: movedByPushToFrontPlugin
-
 # TODO: drop-down menu of decks and note types
 # TODO: drop-down menu of delimiter
 # TODO: Make this app use a QMainWindow by creating a new QApplication instance
@@ -86,11 +84,8 @@ if False:
 
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 
-# TODO: (VERY IMPORTANT) Include a log file of the replacements done, number of replacements, what were not replaced, etc.
-
 # TODO: Add functionality for user to decide whether or not to add tags to the notes
 # TODO: test for other delimiters
-# TODO: Button for opening log file
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -331,7 +326,6 @@ class TextEditor(QDialog):
 
         mid = mw.col.models.byName(self.selected_model)['id']       # model ID
         nids = mw.col.findNotes('mid:' + str(mid))                  # returns a list of noteIds
-        # ctr = 0
 
         logger.info('=================================================================\n'
                     'Version {}\n'.format(__version__) +
@@ -378,7 +372,6 @@ class TextEditor(QDialog):
                     if card.type == 0 or card.queue == -1 or card.queue == -2 or card.queue == -3:
                         self.matched_vocab.append(vocab)
                         self.number_of_replacements += 1
-                        # ctr += 1
 
                         mw.col.sched.unsuspendCards([card_id])
                         mw.col.sched.sortCards([card_id], start=self.number_of_replacements, step=1)
