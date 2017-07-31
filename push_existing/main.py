@@ -81,6 +81,7 @@ if False:
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 
 # TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
+# TODO: FFS Choose a better name for you add-on
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -123,7 +124,7 @@ class TextEditor(QDialog):
         self.number_of_notes_in_deck                = 0
 
         # setWindowTitle is probably a super method from QtGui
-        self.setWindowTitle('Push Existing Vocab add-on')
+        self.setWindowTitle('Push Existing Vocab Add-On')
 
         self._init_buttons()
         self.__init_json()
@@ -138,6 +139,11 @@ class TextEditor(QDialog):
         Each of which calls _models_combo_changed, then _fields_combo_changed
         to update the contents of the ComboBoxes and change the currentIndex
         based on the contents of the JSON file
+
+        The Delimiter stored inside the JSON file is not the actual delimiter but is the key
+        The actual delimiter is found through lookup on the global dict DELIMITER_DICT
+        The actual delimiter is used by self.delimiter
+        Only the key is displayed however, not the acutal delimiter (for ease of use)
 
         :return:        None
         """
@@ -432,6 +438,10 @@ class TextEditor(QDialog):
         self.number_of_cards_to_resched_per_note = 1
 
     def __delimiter_changed(self):
+        """
+        Looks up the actual delimiter from the global DELIMITER_DICT
+        based on the currentText of self._delimiter_combo
+        """
         self.delimiter = DELIMITER_DICT[self._delimiter_combo.currentText()]
 
     def __encoding_changed(self):
@@ -591,9 +601,6 @@ class TextEditor(QDialog):
 
         :return:    None
         """
-        # FIXME: Temp, will replace with combobox
-        # self.field_tomatch = 'Expression_Original_Unedited'
-        # self.selected_model = 'Japanese-1b811 example_sentences'
 
         self.number_of_replacements = 0
         self.reset_list()
@@ -699,6 +706,13 @@ class TextEditor(QDialog):
         """
         Creates a JSON file if it doesn't exist
         Otherwise, saves the QComboBox and QRadioButton settings
+
+        Due to difficulties in lookup when dealing with delimiters such as \n or \t
+        the __delimiter stored inside the JSON file is based
+        on a reverse lookup an a global dictionary DELIMITER_DICT
+
+        On initialization, __init_json looks for the actual delimiter based on the key
+        which was based on reverse lookup
 
         :param QCloseEvent:
         :return:                None
