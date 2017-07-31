@@ -80,9 +80,6 @@ if False:
 
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 
-# TODO: (IMPORTANT) Json for last saved preferences
-# TODO: (IMP) Num of current cards combobox not yet functional
-
 # TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
 
 #  ===================== TO_DO_LIST ===================== #
@@ -98,13 +95,13 @@ class TextEditor(QDialog):
         '''
         TESTS:
         Models:                     Passing (Perfect) TODO: Only Show non-empty models
-        Field to Match:             Works in response to models
-        Num cards to resch:         NONE
+        Field to Match:             Works in response to models (Passing)
+        Num cards to resch:         Passing
         Delim:                      Passing
         Encoding:                   Passing? (Works, garbage logging for SIG)
 
         Radio (tag):                Passing
-        JSON                        Problem for 3 comboboxes
+        JSON                        Passing
         '''
         super(TextEditor, self).__init__(parent)
 
@@ -147,7 +144,7 @@ class TextEditor(QDialog):
 
             self.number_of_cards_to_resched_per_note = conf['default_num_of_cards']
             self._cards_to_resch_combo.setCurrentIndex(self._cards_to_resch_combo
-                                                       .findData(self.number_of_cards_to_resched_per_note))
+                                                       .findText(str(self.number_of_cards_to_resched_per_note)))
 
             __delimiter_ = conf['default_delimiter']
             self.delimiter = DELIMITER_DICT[__delimiter_]
@@ -178,13 +175,12 @@ class TextEditor(QDialog):
         self.selected_model = self._models_combo.currentText()
 
         self._fields_combo = QComboBox()
-        # FIXME: Should be automatically filled
-        # self._fields_combo.addItems(['Expression_Original_Unedited'])
-        # self._fields_combo.setCurrentIndex(0)
+        # self._fields_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self._fields_combo.setMinimumWidth(236)
         self.field_tomatch = self._fields_combo.currentText()
 
         self._cards_to_resch_combo = QComboBox()
-        self._cards_to_resch_combo.addItems(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'All'])
+        self._cards_to_resch_combo.addItems(['1', '2'])
         self._cards_to_resch_combo.setCurrentIndex(0)
         self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
 
@@ -230,8 +226,8 @@ class TextEditor(QDialog):
         self.clear_list.clicked.connect(self.reset_list)
 
         # ===================== COMBOX BOXES ===================== #
-        self._models_combo.currentIndexChanged.connect(self._models_combo_changed)
-        self._fields_combo.currentIndexChanged.connect(self._selected_in_combo)
+        self._models_combo.currentIndexChanged.connect(lambda: self._models_combo_changed(sender=self._models_combo))
+        self._fields_combo.currentIndexChanged.connect(self._fields_combo_changed)
         # self._cards_to_resch_combo.currentIndexChanged.connect(self._cards_to_resch_combo_changed)
         self._delimiter_combo.currentIndexChanged.connect(self._selected_in_combo)
         self._encoding_combo.currentIndexChanged.connect(self._selected_in_combo)
@@ -351,24 +347,30 @@ class TextEditor(QDialog):
         self.setFocus()
         self.show()
 
-    def _models_combo_changed(self):
+    def _models_combo_changed(self, sender=None):
         self._fields_combo.clear()
         self.selected_model = self._models_combo.currentText()
 
         # NOTE: (IMP!) use index protocol for json objects, dot notation otherwise (DB)
-        mid = mw.col.models.byName(self.selected_model)['id']  # model ID
-        # showInfo(str(mid))
-        nids = mw.col.findNotes('mid:' + str(mid))             # returns a list of noteIds
+        __mid = mw.col.models.byName(self.selected_model)['id']  # model ID
+        __nids = mw.col.findNotes('mid:' + str(__mid))             # returns a list of noteIds
         try:
-            sample_nid = nids[0]
+            self.__sample_nid = __nids[0]
         except IndexError:
             # when nids is an empty list
-            showInfo('No Notes found for that Model\n Please select another one')
+            if sender == self._models_combo:
+                showInfo('No Notes found for that Model\n Please select another one')
             return
 
-        __note = mw.col.getNote(sample_nid)
-        # showInfo(str(__note.keys()[0]))
+        __note = mw.col.getNote(self.__sample_nid)
         self._fields_combo.addItems([field for field in sorted(__note.keys())])
+
+    def _fields_combo_changed(self):
+        self._cards_to_resch_combo.clear()
+        self.field_tomatch = self._fields_combo.currentText()
+
+        __cids = mw.col.findCards('nid:' + str(self.__sample_nid))
+        self._cards_to_resch_combo.addItems([str(num+1) for num in range(len(__cids))])
 
     def _selected_in_combo(self):
         # FIXME: separate function for each combobox
@@ -590,7 +592,7 @@ class TextEditor(QDialog):
                 for card_id in cids:
                     number_of_cards_to_resched_ctr += 1
 
-                    if number_of_cards_to_resched_ctr >= self.number_of_cards_to_resched_per_note + 1:
+                    if number_of_cards_to_resched_ctr >= int(self.number_of_cards_to_resched_per_note) + 1:
                         break
 
                     card = mw.col.getCard(card_id)
@@ -638,14 +640,13 @@ class TextEditor(QDialog):
         self._num_cards_no_matches_lcd.display(len(self.unmatched_vocab))
 
     def closeEvent(self, QCloseEvent):
-        # https: // stackoverflow.com / questions / 14834494 / pyqt - clicking - x - doesnt - trigger - closeevent
-        # FIXME: Create a Yes or No Prompt, # Yes = override json, # No = preserve json
-
+        # https://stackoverflow.com/questions/14834494/pyqt-clicking-x-doesnt-trigger-closeevent
         reply = QMessageBox.question(self, 'Prompt', 'Would you like to save your settings?',
                                      QMessageBox.Yes, QMessageBox.No)
 
         # https://stackoverflow.com/questions/2568673/inverse-dictionary-lookup-in-python
-        __delimiter = next(key for key, value in DELIMITER_DICT.items() if value == self.delimiter)
+        if self.delimiter:
+            __delimiter = next(key for key, value in DELIMITER_DICT.items() if value == self.delimiter)
 
         conf = {'default_model':            self.selected_model,
                 'default_field_to_match':   self.field_tomatch,
