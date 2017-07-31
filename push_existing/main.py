@@ -240,7 +240,6 @@ class TextEditor(QDialog):
         self._cards_to_resch_combo.currentIndexChanged.connect(self._cards_to_resch_combo_changed)
         self._delimiter_combo.currentIndexChanged.connect(self.__delimiter_changed)
         self._encoding_combo.currentIndexChanged.connect(self.__encoding_changed)
-
         self._yes_tagging_radio.toggled.connect(self._enable_disable_tagging)
 
     def _init_ui(self):
