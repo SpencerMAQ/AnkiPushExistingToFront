@@ -138,13 +138,19 @@ class TextEditor(QDialog):
             self.selected_model = conf['default_model']
             self._models_combo.setCurrentIndex(self._models_combo.findText(self.selected_model))
 
-            self._models_combo_changed()
-            self.field_tomatch = conf['default_field_to_match']
-            self._fields_combo.setCurrentIndex(self._fields_combo.findText(self.field_tomatch))
+            if self.selected_model:
+                self._models_combo_changed()
+                self.field_tomatch = conf['default_field_to_match']
+                self._fields_combo.setCurrentIndex(self._fields_combo.findText(self.field_tomatch))
 
-            self.number_of_cards_to_resched_per_note = conf['default_num_of_cards']
-            self._cards_to_resch_combo.setCurrentIndex(self._cards_to_resch_combo
-                                                       .findText(str(self.number_of_cards_to_resched_per_note)))
+                if self.field_tomatch:
+                    self._fields_combo_changed()
+                    self.number_of_cards_to_resched_per_note = conf['default_num_of_cards']
+                    self._cards_to_resch_combo.setCurrentIndex(self._cards_to_resch_combo
+                                                               .findText(str(self.
+                                                                             number_of_cards_to_resched_per_note)
+                                                                         )
+                                                               )
 
             __delimiter_ = conf['default_delimiter']
             self.delimiter = DELIMITER_DICT[__delimiter_]
@@ -158,6 +164,9 @@ class TextEditor(QDialog):
 
             self.encoding = conf['default_encoding']
             self._encoding_combo.setCurrentIndex(self._encoding_combo.findText(self.encoding))
+        else:
+            self.enable_add_note_tag = True
+            self._yes_tagging_radio.toggle()
 
     def _init_buttons(self):
         self.import_btn = QPushButton('Import CSV')
@@ -180,9 +189,9 @@ class TextEditor(QDialog):
         self.field_tomatch = self._fields_combo.currentText()
 
         self._cards_to_resch_combo = QComboBox()
-        self._cards_to_resch_combo.addItems(['1', '2'])
-        self._cards_to_resch_combo.setCurrentIndex(0)
-        self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
+        # self._cards_to_resch_combo.addItems(['1', '2'])
+        # self._cards_to_resch_combo.setCurrentIndex(0)
+        # self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
 
         self._delimiter_combo = QComboBox()
         self._delimiter_combo.addItems(['New Line',
@@ -228,9 +237,9 @@ class TextEditor(QDialog):
         # ===================== COMBOX BOXES ===================== #
         self._models_combo.currentIndexChanged.connect(lambda: self._models_combo_changed(sender=self._models_combo))
         self._fields_combo.currentIndexChanged.connect(self._fields_combo_changed)
-        # self._cards_to_resch_combo.currentIndexChanged.connect(self._cards_to_resch_combo_changed)
-        self._delimiter_combo.currentIndexChanged.connect(self._selected_in_combo)
-        self._encoding_combo.currentIndexChanged.connect(self._selected_in_combo)
+        self._cards_to_resch_combo.currentIndexChanged.connect(self._cards_to_resch_combo_changed)
+        self._delimiter_combo.currentIndexChanged.connect(self.__delimiter_changed)
+        self._encoding_combo.currentIndexChanged.connect(self.__encoding_changed)
 
         self._yes_tagging_radio.toggled.connect(self._enable_disable_tagging)
 
@@ -352,8 +361,8 @@ class TextEditor(QDialog):
         self.selected_model = self._models_combo.currentText()
 
         # NOTE: (IMP!) use index protocol for json objects, dot notation otherwise (DB)
-        __mid = mw.col.models.byName(self.selected_model)['id']  # model ID
-        __nids = mw.col.findNotes('mid:' + str(__mid))             # returns a list of noteIds
+        __mid = mw.col.models.byName(self.selected_model)['id']     # model ID
+        __nids = mw.col.findNotes('mid:' + str(__mid))              # returns a list of noteIds
         try:
             self.__sample_nid = __nids[0]
         except IndexError:
@@ -371,15 +380,13 @@ class TextEditor(QDialog):
 
         __cids = mw.col.findCards('nid:' + str(self.__sample_nid))
         self._cards_to_resch_combo.addItems([str(num+1) for num in range(len(__cids))])
+        self._cards_to_resch_combo.setCurrentIndex(0)
+        self.number_of_cards_to_resched_per_note = 1
 
-    def _selected_in_combo(self):
-        # FIXME: separate function for each combobox
-        self.field_tomatch = self._fields_combo.currentText()
-        # self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
-        # FIXME: should depend on INDEX
-
+    def __delimiter_changed(self):
         self.delimiter = DELIMITER_DICT[self._delimiter_combo.currentText()]
 
+    def __encoding_changed(self):
         self.encoding = self._encoding_combo.currentText()
 
     def _cards_to_resch_combo_changed(self):
