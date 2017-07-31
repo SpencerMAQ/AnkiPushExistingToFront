@@ -131,6 +131,16 @@ class TextEditor(QDialog):
         self._init_ui()
 
     def __init_json(self):
+        """
+        Initialize settings if a JSON file exists
+
+        Nested if statements are inside the with context
+        Each of which calls _models_combo_changed, then _fields_combo_changed
+        to update the contents of the ComboBoxes and change the currentIndex
+        based on the contents of the JSON file
+
+        :return:        None
+        """
         if os.path.isfile(NEW_PATH + r'\push_existing.json'):
             with open(NEW_PATH + r'\push_existing.json', 'r') as fh:
                 conf = json.load(fh)
@@ -169,6 +179,9 @@ class TextEditor(QDialog):
             self._yes_tagging_radio.toggle()
 
     def _init_buttons(self):
+        """
+        QtGui/QtWidget elements
+        """
         self.import_btn = QPushButton('Import CSV')
         self.show_contents = QPushButton('Show Contents')
         self.anki_based_reschedule_button = QPushButton('Anki-Based Resched')
@@ -243,6 +256,9 @@ class TextEditor(QDialog):
         self._yes_tagging_radio.toggled.connect(self._enable_disable_tagging)
 
     def _init_ui(self):
+        """
+        Initialize Layout
+        """
         # ===================== SEPARATORS ===================== #
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
@@ -356,6 +372,20 @@ class TextEditor(QDialog):
         self.show()
 
     def _models_combo_changed(self, sender=None):
+        """
+        Clears the fields QComboBox everytime the Index is changed (currentIndexChanged),
+        This clear is necessary so that the 'fields' ComboBox isn't adding fields indefinitely
+        everytime the 'models' ComboxBox index changes
+
+        It then fills the 'fields' ComboBox based on the selected model: self._models_combo.currentText()
+
+        Aside from being called everytime the Model Combox index changes
+        This function is also used inside __init_json to populate the Models ComboBox
+        on initialization if the JSON file exists
+
+        :param sender:      None by default, self._models_combo as sent from signal
+        :return:            None
+        """
         self._fields_combo.clear()
         self.selected_model = self._models_combo.currentText()
 
@@ -374,6 +404,25 @@ class TextEditor(QDialog):
         self._fields_combo.addItems([field for field in sorted(__note.keys())])
 
     def _fields_combo_changed(self):
+        """
+        Clears the _cards_to_resch_combo ComboBox everytime it is called
+        This clear is to ensure that its contents are only populated
+        depending on the corresponding field to it
+
+        The function then proceeds to get a list of card IDs
+        based on the attribute self.__sample_nid obtained from self._models_combo_changed
+
+        The card IDs are stored in a variable __cids
+        A list comprehension is then made depending on the length of that list
+        if len(list) = 1, the comboBox would be populate by only one option: 1
+        if len(list) = 2, two options: 1, 2 and so on
+
+        The default value however (and the display) is set to the first index, value: 1
+        i.e. unless the user explicitly tells it not to
+        at which point, the funciton _cards_to_resch_combo_changed is called
+
+        :return:        None
+        """
         self._cards_to_resch_combo.clear()
         self.field_tomatch = self._fields_combo.currentText()
 
@@ -404,7 +453,7 @@ class TextEditor(QDialog):
 
         :param delimiter:   '\n' by default
         :param encoding:    'utf-8' by default
-        :return:
+        :return:            None
         """
 
         filename = QFileDialog.getOpenFileName(self,
@@ -447,7 +496,7 @@ class TextEditor(QDialog):
 
         :param file:
         :param delimiter:
-        :return:
+        :return:                None
         """
         contents = file.read()
         csvreader = contents.split(delimiter)
@@ -477,7 +526,8 @@ class TextEditor(QDialog):
         Primarily used as an event in response to the button
         Used in other methods as well (import csv and resched)
         to ensure that the lists they need are empty
-        :return:
+
+        :return:        None
         """
         del self.matched_vocab[:]
         del self.unmatched_vocab[:]
@@ -646,6 +696,13 @@ class TextEditor(QDialog):
         self._num_cards_no_matches_lcd.display(len(self.unmatched_vocab))
 
     def closeEvent(self, QCloseEvent):
+        """
+        Creates a JSON file if it doesn't exist
+        Otherwise, saves the QComboBox and QRadioButton settings
+
+        :param QCloseEvent:
+        :return:                None
+        """
         # https://stackoverflow.com/questions/14834494/pyqt-clicking-x-doesnt-trigger-closeevent
         reply = QMessageBox.question(self, 'Prompt', 'Would you like to save your settings?',
                                      QMessageBox.Yes, QMessageBox.No)
@@ -653,6 +710,8 @@ class TextEditor(QDialog):
         # https://stackoverflow.com/questions/2568673/inverse-dictionary-lookup-in-python
         if self.delimiter:
             __delimiter = next(key for key, value in DELIMITER_DICT.items() if value == self.delimiter)
+        else:
+            __delimiter = ''
 
         conf = {'default_model':            self.selected_model,
                 'default_field_to_match':   self.field_tomatch,
