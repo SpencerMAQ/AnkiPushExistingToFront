@@ -16,11 +16,10 @@ import logging
 if sys.version_info[0] == 3 and sys.version_info[1] >= 5:
     from functools import lru_cache
 
-# TODO: Code alternative for Py 3.5
-from PyQt4 import QtCore
 try:
+    from PyQt4 import QtCore
     _from_utf8 = QtCore.QString.fromUtf8
-except AttributeError:
+except (AttributeError, ImportError):
     def _from_utf8(s):
         return s
 
@@ -62,9 +61,9 @@ if False:
     mw = Temporary()
 
 #  ===================== TO_DO_LIST ===================== #
-
+# NOTE : TODO: I would have chosen to do it by decks but there seems to be a problem with the API when using decks
 # TODO: maybe this'd work better if you did by note type instead of deck? (or maybe both)
-
+# FIXME: Encoding Problems (only for logging when using UTF-8 With BOM) i.e. UTF-8-SIG
 # TODO: Make this app use a QMainWindow by creating a new QApplication instance
 
 # TODO: include functionaly for user to push only CERTAIN CARDS based on the names of the cards (Diffucult)
@@ -79,6 +78,7 @@ if False:
 
 # TODO: (IMPORTANT) ComboBox for encoding of CSV
 
+
 #  ===================== TO_DO_LIST ===================== #
 
 
@@ -88,7 +88,17 @@ class TextEditor(QDialog):
         Initialize the UI
         :param parent:      global mw from aqt
         """
+        # TODO:
+        '''
+        TESTS:
+        Models:                     Passing (Perfect) TODO: Only Show non-empty models
+        Field to Match:             Works in response to models
+        Num cards to resch:         NONE
+        Delim:                      Passing
+        Encoding:                   Passing? (Works, garbage logging for SIG)
 
+        Radio (tag):                Passing
+        '''
         super(TextEditor, self).__init__(parent)
 
         self.matched_vocab                          = []
@@ -104,7 +114,7 @@ class TextEditor(QDialog):
         self.delimiter                              = '\n'
 
         self.number_of_notes_in_deck                = 0
-        self.enable_add_note_tag                    = True      # TODO: RadioButtons
+        self.enable_add_note_tag                    = True
         self.encoding                               = 'UTF-8'
         # self.delimiter = '\r\n'
 
@@ -125,15 +135,21 @@ class TextEditor(QDialog):
 
         # ===================== COMBOX BOXES and RADIO ===================== #
         self._models_combo = QComboBox()
-        # FIXME: Should be filled based on fetch
-        self._models_combo.addItems(['Japanese-1b811 example_sentences', 'Placeholder 1'])
+
+        self._models_combo.addItems([model for model in sorted(mw.col.models.allNames())])
+        self._models_combo.setCurrentIndex(0)
+        self.selected_model = self._models_combo.currentText()
 
         self._fields_combo = QComboBox()
         # FIXME: Should be automatically filled
-        self._fields_combo.addItems(['Expression_Original_Unedited', 'Placeholder 1'])
+        self._fields_combo.addItems(['Expression_Original_Unedited'])
+        self._fields_combo.setCurrentIndex(0)
+        self.field_tomatch = self._fields_combo.currentText()
 
         self._cards_to_resch_combo = QComboBox()
         self._cards_to_resch_combo.addItems(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'All'])
+        self._cards_to_resch_combo.setCurrentIndex(0)
+        self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
 
         self._delimiter_combo = QComboBox()
         self._delimiter_combo.addItems([r'\n',
@@ -145,11 +161,19 @@ class TextEditor(QDialog):
                                         '"; "(Semicolon with space)']
                                        )
 
+
+        self._delimiter_combo.setCurrentIndex(0)
+
         self._encoding_combo = QComboBox()
         self._encoding_combo.addItems(['UTF-8',
                                        'UTF-8-SIG',
                                        'Shift JIS']
                                       )
+        self._encoding_combo.setCurrentIndex(0)
+
+        self._yes_tagging_radio = QRadioButton('Yes')
+        self._no_tagging_radio = QRadioButton('No')
+        self._yes_tagging_radio.toggle()
 
         # ===================== LCD BOXES ===================== #
         self._num_imported_cards_lcd = QLCDNumber()
@@ -172,10 +196,13 @@ class TextEditor(QDialog):
         self.clear_list.clicked.connect(self.reset_list)
 
         # ===================== COMBOX BOXES ===================== #
-        self._models_combo.currentIndexChanged.connect(self._selected_in_combo)
-        # self._fields_combo.currentIndexChanged.connect()
-        # self._cards_to_resch_combo.currentIndexChanged.connect()
-        # self._delimiter_combo.currentIndexChanged.connect()
+        self._models_combo.currentIndexChanged.connect(self._models_combo_changed)
+        self._fields_combo.currentIndexChanged.connect(self._selected_in_combo)
+        # self._cards_to_resch_combo.currentIndexChanged.connect(self._selected_in_combo)
+        self._delimiter_combo.currentIndexChanged.connect(self._selected_in_combo)
+        self._encoding_combo.currentIndexChanged.connect(self._selected_in_combo)
+
+        self._yes_tagging_radio.toggled.connect(self._enable_disable_tagging)
 
     def _init_ui(self):
         # ===================== SEPARATORS ===================== #
@@ -215,12 +242,23 @@ class TextEditor(QDialog):
         combo_ver_layout_5.addWidget(combo_ver_lay5_label)
         combo_ver_layout_5.addWidget(self._encoding_combo)
 
+        combo_ver_layout_6_radio = QVBoxLayout()
+        enable_tagging_label = QLabel('Enable Tagging')
+        combo_ver_layout_6_radio.addWidget(enable_tagging_label)
+
+        yes_no_hbox_layout = QHBoxLayout()
+        yes_no_hbox_layout.addWidget(self._yes_tagging_radio)
+        yes_no_hbox_layout.addWidget(self._no_tagging_radio)
+        combo_ver_layout_6_radio.addLayout(yes_no_hbox_layout)
+
         combo_layout = QHBoxLayout()
         combo_layout.addLayout(combo_ver_layout_1)
         combo_layout.addLayout(combo_ver_layout_2)
         combo_layout.addLayout(combo_ver_layout_3)
         combo_layout.addLayout(combo_ver_layout_4)
         combo_layout.addLayout(combo_ver_layout_5)
+        combo_layout.addLayout(combo_ver_layout_6_radio)
+
 
         # ===================== LCD BOXES ===================== #
         lcd_ver_layout_1 = QVBoxLayout()
@@ -279,14 +317,50 @@ class TextEditor(QDialog):
         self.setFocus()
         self.show()
 
-    def _selected_in_combo(self):
+    def _models_combo_changed(self):
+        self._fields_combo.clear()
         self.selected_model = self._models_combo.currentText()
+
+        # NOTE: (IMP!) use index protocol for json objects, dot notation otherwise (DB)
+        mid = mw.col.models.byName(self.selected_model)['id']  # model ID
+        # showInfo(str(mid))
+        nids = mw.col.findNotes('mid:' + str(mid))             # returns a list of noteIds
+        try:
+            sample_nid = nids[0]
+        except IndexError:
+            # when nids is an empty list
+            showInfo('No Notes found for that Model\n Please select another one')
+            return
+
+        __note = mw.col.getNote(sample_nid)
+        # showInfo(str(__note.keys()[0]))
+        self._fields_combo.addItems([field for field in sorted(__note.keys())])
+
+
+    def _selected_in_combo(self):
         self.field_tomatch = self._fields_combo.currentText()
         # self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
         # FIXME: should depend on INDEX
-        # self.delimiter = self._delimiter_combo.currentText()
 
-        showInfo(self.selected_model)
+        delimiter_dict = {r'\n': '\n',
+                          r'\t': '\t',
+                          'One Whitespace': ' ',
+                          '", "(Comma then space)': ', ',
+                          '","(Comma without space)': ',',
+                          '";"(Semicolon without space)': ';',
+                          '"; "(Semicolon with space)': '; '
+                          }
+        self.delimiter = delimiter_dict[self._delimiter_combo.currentText()]
+
+        self.encoding = self._encoding_combo.currentText()
+
+        # showInfo(self.selected_model)
+
+    def _enable_disable_tagging(self):
+        if self._yes_tagging_radio.isChecked():
+            self.enable_add_note_tag = True
+        else:
+            self.enable_add_note_tag = False
 
     def import_csv(self, delimiter, encoding):
         """
@@ -346,8 +420,8 @@ class TextEditor(QDialog):
         for line in csvreader:
             self.list_of_vocabs.append(line.strip('\r'))
 
-        # for line in file:
-        #     self.list_of_vocabs.append(line)
+            # for line in file:
+            #     self.list_of_vocabs.append(line)
 
     def show_contents_signal(self):
         # FiXME: Should show the entire table, not one by one
@@ -361,7 +435,7 @@ class TextEditor(QDialog):
         except:
             for vocab in list_of_vocabs:
                 showInfo(_from_utf8(vocab))
-            # raise
+                # raise
 
     def reset_list(self):
         """
@@ -455,6 +529,7 @@ class TextEditor(QDialog):
                     'Version {}\n'.format(__version__) +
                     'Imported from CSV: \t' +
                     ', '.join(vocab.encode(self.encoding) for vocab in self.list_of_vocabs)
+                    # ', '.join(vocab for vocab in self.list_of_vocabs)
                     )
 
         if not self.list_of_vocabs:
@@ -465,7 +540,7 @@ class TextEditor(QDialog):
         dict_of_note_first_fields = {
             mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>'):
                 note_id
-                for note_id in nids
+            for note_id in nids
             }
 
         list_of_deck_vocabs_20k = dict_of_note_first_fields.keys()
