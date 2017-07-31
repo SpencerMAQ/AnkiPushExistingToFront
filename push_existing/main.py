@@ -49,6 +49,15 @@ logger = logging.getLogger()
 
 del addon_mgr_instance
 
+DELIMITER_DICT = {'New Line': '\n',
+                  'Tab': '\t',
+                  'One Whitespace': ' ',
+                  '", "(Comma then space)': ', ',
+                  '","(Comma without space)': ',',
+                  '";"(Semicolon without space)': ';',
+                  '"; "(Semicolon with space)': '; '
+                  }
+
 # ===================== TEMPORARY STUFF ===================== #
 if False:
     from PyQt5.QtWidgets import *
@@ -72,6 +81,8 @@ if False:
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 
 # TODO: (IMPORTANT) Json for last saved preferences
+# TODO: (IMP) Num of current cards combobox not yet functional
+
 # TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
 
 #  ===================== TO_DO_LIST ===================== #
@@ -138,16 +149,15 @@ class TextEditor(QDialog):
             self._cards_to_resch_combo.setCurrentIndex(self._cards_to_resch_combo
                                                        .findData(self.number_of_cards_to_resched_per_note))
 
-            self.delimiter = conf['default_delimiter']
-            self._delimiter_combo.setCurrentIndex(self._delimiter_combo.findText(self.delimiter))
+            __delimiter_ = conf['default_delimiter']
+            self.delimiter = DELIMITER_DICT[__delimiter_]
+            self._delimiter_combo.setCurrentIndex(self._delimiter_combo.findText(__delimiter_))
 
             self.enable_add_note_tag = conf['enable_add_tag']
             if self.enable_add_note_tag:
                 self._yes_tagging_radio.toggle()
-                # self._no_tagging_radio.setChecked(False)
             else:
                 self._no_tagging_radio.toggle()
-                # self._yes_tagging_radio.setChecked(False)
 
             self.encoding = conf['default_encoding']
             self._encoding_combo.setCurrentIndex(self._encoding_combo.findText(self.encoding))
@@ -222,7 +232,7 @@ class TextEditor(QDialog):
         # ===================== COMBOX BOXES ===================== #
         self._models_combo.currentIndexChanged.connect(self._models_combo_changed)
         self._fields_combo.currentIndexChanged.connect(self._selected_in_combo)
-        # self._cards_to_resch_combo.currentIndexChanged.connect(self._selected_in_combo)
+        # self._cards_to_resch_combo.currentIndexChanged.connect(self._cards_to_resch_combo_changed)
         self._delimiter_combo.currentIndexChanged.connect(self._selected_in_combo)
         self._encoding_combo.currentIndexChanged.connect(self._selected_in_combo)
 
@@ -366,17 +376,12 @@ class TextEditor(QDialog):
         # self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
         # FIXME: should depend on INDEX
 
-        delimiter_dict = {'New Line': '\n',
-                          'Tab': '\t',
-                          'One Whitespace': ' ',
-                          '", "(Comma then space)': ', ',
-                          '","(Comma without space)': ',',
-                          '";"(Semicolon without space)': ';',
-                          '"; "(Semicolon with space)': '; '
-                          }
-        self.delimiter = delimiter_dict[self._delimiter_combo.currentText()]
+        self.delimiter = DELIMITER_DICT[self._delimiter_combo.currentText()]
 
         self.encoding = self._encoding_combo.currentText()
+
+    def _cards_to_resch_combo_changed(self):
+        self.number_of_cards_to_resched_per_note = self._cards_to_resch_combo.currentText()
 
     def _enable_disable_tagging(self):
         if self._yes_tagging_radio.isChecked():
@@ -639,10 +644,13 @@ class TextEditor(QDialog):
         reply = QMessageBox.question(self, 'Prompt', 'Would you like to save your settings?',
                                      QMessageBox.Yes, QMessageBox.No)
 
+        # https://stackoverflow.com/questions/2568673/inverse-dictionary-lookup-in-python
+        __delimiter = next(key for key, value in DELIMITER_DICT.items() if value == self.delimiter)
+
         conf = {'default_model':            self.selected_model,
                 'default_field_to_match':   self.field_tomatch,
                 'default_num_of_cards':     self.number_of_cards_to_resched_per_note,
-                'default_delimiter':        self.delimiter,
+                'default_delimiter':        __delimiter,
                 'enable_add_tag':           self.enable_add_note_tag,
                 'default_encoding':         self.encoding
                 }
