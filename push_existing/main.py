@@ -35,15 +35,16 @@ LOG_FORMAT = '%(levelname)s \t| %(asctime)s: \t%(message)s'
 
 addon_mgr_instance = AddonManager(mw)
 ADD_ON_PATH = addon_mgr_instance.addonsFolder()
-PUSH_EXISTING_PATH = ADD_ON_PATH + '/push_existing'
+PUSH_EXISTING_PATH = ADD_ON_PATH + r'\push_existing'
 
 if not os.path.exists(PUSH_EXISTING_PATH):
     os.makedirs(PUSH_EXISTING_PATH)
 NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
-NEW_PATH = os.path.join(NEW_PATH, 'logging.log')
+# CONFIG_PATH = os.path.join(NEW_PATH, 'push_existing_config.json')
+LOG_PATH = os.path.join(NEW_PATH, 'push_existing.log')
 
 # DEBUG 10 INFO 20 WARNING 30 ERROR 40 CRITICAL 50
-logging.basicConfig(filename=NEW_PATH, level=logging.DEBUG, format=LOG_FORMAT)
+logging.basicConfig(filename=LOG_PATH, level=logging.DEBUG, format=LOG_FORMAT)
 logger = logging.getLogger()
 
 del addon_mgr_instance
@@ -70,14 +71,8 @@ if False:
 
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 
-# TODO: Add functionality for user to decide whether or not to add tags to the notes
-# TODO: test for other delimiters
-
 # TODO: (IMPORTANT) Json for last saved preferences
-# TODO: (IMPORTANT) QRadioButton
-
-# TODO: (IMPORTANT) ComboBox for encoding of CSV
-
+# TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -98,6 +93,7 @@ class TextEditor(QDialog):
         Encoding:                   Passing? (Works, garbage logging for SIG)
 
         Radio (tag):                Passing
+        JSON                        Problem for 3 comboboxes
         '''
         super(TextEditor, self).__init__(parent)
 
@@ -112,18 +108,49 @@ class TextEditor(QDialog):
         self.field_tomatch                          = ''        # TODO: to be filled in by a signal
         self.number_of_cards_to_resched_per_note    = 1
         self.delimiter                              = '\n'
+        # self.delimiter = '\r\n'
 
-        self.number_of_notes_in_deck                = 0
         self.enable_add_note_tag                    = True
         self.encoding                               = 'UTF-8'
-        # self.delimiter = '\r\n'
+        self.number_of_notes_in_deck                = 0
 
         # setWindowTitle is probably a super method from QtGui
         self.setWindowTitle('Push Existing Vocab add-on')
 
         self._init_buttons()
+        self.__init_json()
         self._init_signals()
         self._init_ui()
+
+    def __init_json(self):
+        if os.path.isfile(NEW_PATH + r'\push_existing.json'):
+            with open(NEW_PATH + r'\push_existing.json', 'r') as fh:
+                conf = json.load(fh)
+
+            self.selected_model = conf['default_model']
+            self._models_combo.setCurrentIndex(self._models_combo.findText(self.selected_model))
+
+            self._models_combo_changed()
+            self.field_tomatch = conf['default_field_to_match']
+            self._fields_combo.setCurrentIndex(self._fields_combo.findText(self.field_tomatch))
+
+            self.number_of_cards_to_resched_per_note = conf['default_num_of_cards']
+            self._cards_to_resch_combo.setCurrentIndex(self._cards_to_resch_combo
+                                                       .findData(self.number_of_cards_to_resched_per_note))
+
+            self.delimiter = conf['default_delimiter']
+            self._delimiter_combo.setCurrentIndex(self._delimiter_combo.findText(self.delimiter))
+
+            self.enable_add_note_tag = conf['enable_add_tag']
+            if self.enable_add_note_tag:
+                self._yes_tagging_radio.toggle()
+                # self._no_tagging_radio.setChecked(False)
+            else:
+                self._no_tagging_radio.toggle()
+                # self._yes_tagging_radio.setChecked(False)
+
+            self.encoding = conf['default_encoding']
+            self._encoding_combo.setCurrentIndex(self._encoding_combo.findText(self.encoding))
 
     def _init_buttons(self):
         self.import_btn = QPushButton('Import CSV')
@@ -142,8 +169,8 @@ class TextEditor(QDialog):
 
         self._fields_combo = QComboBox()
         # FIXME: Should be automatically filled
-        self._fields_combo.addItems(['Expression_Original_Unedited'])
-        self._fields_combo.setCurrentIndex(0)
+        # self._fields_combo.addItems(['Expression_Original_Unedited'])
+        # self._fields_combo.setCurrentIndex(0)
         self.field_tomatch = self._fields_combo.currentText()
 
         self._cards_to_resch_combo = QComboBox()
@@ -152,16 +179,14 @@ class TextEditor(QDialog):
         self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
 
         self._delimiter_combo = QComboBox()
-        self._delimiter_combo.addItems([r'\n',
-                                        r'\t',
+        self._delimiter_combo.addItems(['New Line',
+                                        'Tab',
                                         'One Whitespace',
                                         '", "(Comma then space)',
                                         '","(Comma without space)',
                                         '";"(Semicolon without space)',
                                         '"; "(Semicolon with space)']
                                        )
-
-
         self._delimiter_combo.setCurrentIndex(0)
 
         self._encoding_combo = QComboBox()
@@ -173,7 +198,6 @@ class TextEditor(QDialog):
 
         self._yes_tagging_radio = QRadioButton('Yes')
         self._no_tagging_radio = QRadioButton('No')
-        self._yes_tagging_radio.toggle()
 
         # ===================== LCD BOXES ===================== #
         self._num_imported_cards_lcd = QLCDNumber()
@@ -336,14 +360,14 @@ class TextEditor(QDialog):
         # showInfo(str(__note.keys()[0]))
         self._fields_combo.addItems([field for field in sorted(__note.keys())])
 
-
     def _selected_in_combo(self):
+        # FIXME: separate function for each combobox
         self.field_tomatch = self._fields_combo.currentText()
         # self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
         # FIXME: should depend on INDEX
 
-        delimiter_dict = {r'\n': '\n',
-                          r'\t': '\t',
+        delimiter_dict = {'New Line': '\n',
+                          'Tab': '\t',
                           'One Whitespace': ' ',
                           '", "(Comma then space)': ', ',
                           '","(Comma without space)': ',',
@@ -353,8 +377,6 @@ class TextEditor(QDialog):
         self.delimiter = delimiter_dict[self._delimiter_combo.currentText()]
 
         self.encoding = self._encoding_combo.currentText()
-
-        # showInfo(self.selected_model)
 
     def _enable_disable_tagging(self):
         if self._yes_tagging_radio.isChecked():
@@ -490,10 +512,10 @@ class TextEditor(QDialog):
     def open_log_file():
         if sys.version_info[0] == 3:
             from webbrowser import open
-            open(NEW_PATH)
+            open(LOG_PATH)
 
         elif sys.version_info[0] == 2:
-            os.startfile(NEW_PATH)
+            os.startfile(LOG_PATH)
 
     # NOTE: this seems to be slower than my original function
     # TODO: I might recode this to use executemany instead, I doubt that'll speed things up though
@@ -611,26 +633,28 @@ class TextEditor(QDialog):
         self._num_cards_no_matches_lcd.display(len(self.unmatched_vocab))
 
     def closeEvent(self, QCloseEvent):
-        # showInfo(QCloseEvent)
         # https: // stackoverflow.com / questions / 14834494 / pyqt - clicking - x - doesnt - trigger - closeevent
         # FIXME: Create a Yes or No Prompt, # Yes = override json, # No = preserve json
-        # showInfo('Would you like to save your settings?')
 
         reply = QMessageBox.question(self, 'Prompt', 'Would you like to save your settings?',
                                      QMessageBox.Yes, QMessageBox.No)
 
-        # FIXME: check first if the file exists, otherwise create it
-        conf = {}
+        conf = {'default_model':            self.selected_model,
+                'default_field_to_match':   self.field_tomatch,
+                'default_num_of_cards':     self.number_of_cards_to_resched_per_note,
+                'default_delimiter':        self.delimiter,
+                'enable_add_tag':           self.enable_add_note_tag,
+                'default_encoding':         self.encoding
+                }
 
-        # False fo
         if reply == QMessageBox.Yes:
-            showInfo('Saving File to JSON')
-            with open(PUSH_EXISTING_PATH + 'push_existing.json', mode='w') as fh:
+            with open(NEW_PATH + r'\push_existing.json', mode='w') as fh:
                 json.dump(conf,
                           fh,
                           indent=4,
                           separators=(',', ': ')
                           )
+
 
 def init_window():
     mw.texteditor = TextEditor(mw)
