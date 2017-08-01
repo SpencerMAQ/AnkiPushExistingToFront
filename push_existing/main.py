@@ -24,14 +24,31 @@ except (AttributeError, ImportError):
         return s
 
 __version__ = '0.0'
-# July 30 2017
+# Aug 1 2017
 
 HOTKEY = 'Shift+P'
 TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
 
 
 # ===================== DO NOT EDIT BEYOND THIS LINE ===================== #
-LOG_FORMAT = '%(levelname)s \t| %(asctime)s: \t%(message)s'
+# https://stackoverflow.com/questions/11232230/logging-to-two-files-with-different-settings
+FORMAT = logging.Formatter('%(levelname)s \t| %(asctime)s: \t%(message)s')
+UNMATCHED_FORMAT = logging.Formatter('%(message)s')
+
+
+def setup_logger(name, log_file, _format=FORMAT, level=logging.DEBUG):
+    """Create two or more loggers because writing to a CSV
+    Causes the Characters to become messed up even with the
+    correct encoding
+    """
+    handler = logging.FileHandler(log_file)
+    handler.setFormatter(_format)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
 
 addon_mgr_instance = AddonManager(mw)
 ADD_ON_PATH = addon_mgr_instance.addonsFolder()
@@ -42,10 +59,10 @@ if not os.path.exists(PUSH_EXISTING_PATH):
 NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
 # CONFIG_PATH = os.path.join(NEW_PATH, 'push_existing_config.json')
 LOG_PATH = os.path.join(NEW_PATH, 'push_existing.log')
+UNMATCHED_LOG_PATH = os.path.join(NEW_PATH, 'unmatched_vocab.log')
 
-# DEBUG 10 INFO 20 WARNING 30 ERROR 40 CRITICAL 50
-logging.basicConfig(filename=LOG_PATH, level=logging.DEBUG, format=LOG_FORMAT)
-logger = logging.getLogger()
+main_logger = setup_logger('main_logger', LOG_PATH)
+unmatched_logger = setup_logger('unmatched_logger', UNMATCHED_LOG_PATH, _format=UNMATCHED_FORMAT)
 
 del addon_mgr_instance
 
@@ -80,8 +97,12 @@ if False:
 
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 
+# TODO: use generators instead of list comprehensions where possible
+
 # TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
 # TODO: FFS Choose a better name for you add-on
+
+# TODO: Add a button to open the unmatched log
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -112,9 +133,9 @@ class TextEditor(QDialog):
         self.matchned_but_not_rescheduled           = []
 
         # ===================== COMBOX BOXES ===================== #
-        self.selected_deck                          = ''        # TODO: to be filled in by a signal
-        self.selected_model                         = ''        # TODO: to be filled in by a signal
-        self.field_tomatch                          = ''        # TODO: to be filled in by a signal
+        self.selected_deck                          = ''
+        self.selected_model                         = ''
+        self.field_tomatch                          = ''
         self.number_of_cards_to_resched_per_note    = 1
         self.delimiter                              = '\n'
         # self.delimiter = '\r\n'
@@ -615,14 +636,13 @@ class TextEditor(QDialog):
             showInfo('Please Select a Field to Match first')
             return
 
-        nids = mw.col.findNotes('mid:' + str(mid))                  # returns a list of noteIds
+        nids = mw.col.findNotes('mid:' + str(mid))                      # returns a list of noteIds
 
-        logger.info('=================================================================\n'
-                    'Version {}\n'.format(__version__) +
-                    'Imported from CSV: \t' +
-                    ', '.join(vocab.encode(self.encoding) for vocab in self.list_of_vocabs)
-                    # ', '.join(vocab for vocab in self.list_of_vocabs)
-                    )
+        main_logger.info('=================================================================\n'
+                         'Version {}\n'.format(__version__) +
+                         'Imported from CSV: \t' +
+                         ', '.join(vocab.encode(self.encoding) for vocab in self.list_of_vocabs)
+                         )
 
         if not self.list_of_vocabs:
             showInfo('The List is empty\n'
@@ -667,7 +687,7 @@ class TextEditor(QDialog):
                         mw.col.sched.unsuspendCards([card_id])
                         mw.col.sched.sortCards([card_id], start=self.number_of_replacements, step=1)
 
-                        logger.info('Rescheduled card: {} with cardID: \t{}'
+                        main_logger.info('Rescheduled card: {} with cardID: \t{}'
                                     .format(vocab.encode(self.encoding), card_id))
 
                         if self.enable_add_note_tag:
@@ -678,7 +698,7 @@ class TextEditor(QDialog):
 
                     elif card.type != 0:
                         self.matchned_but_not_rescheduled.append(vocab)
-                        logger.info('Card matched but is already learning/due: \t{}, \tcardID: {}'
+                        main_logger.info('Card matched but is already learning/due: \t{}, \tcardID: {}'
                                     .format(vocab.encode(self.encoding), card_id)
                                     )
 
@@ -687,7 +707,23 @@ class TextEditor(QDialog):
 
             else:
                 self.unmatched_vocab.append(vocab)
-                logger.info('No match found: {}'.format(vocab.encode(self.encoding)))
+                main_logger.info('No match found: {}'.format(vocab.encode(self.encoding)))
+
+        '''
+        Appends unmatched vocabs to a log file which the user can then use to
+        create cards through on other software such as Rikai or Yomi
+        This block works even if the file contains nothing
+        Only adds unique items
+        '''
+        if self.unmatched_vocab:
+            with open(UNMATCHED_LOG_PATH, mode='r') as __file:
+                lines_from_file = [i.decode(self.encoding).encode(self.encoding).strip()
+                                   for i in __file.readlines()
+                                   ]
+
+                for i in self.unmatched_vocab:
+                    if i.encode(self.encoding).strip() not in lines_from_file:
+                        unmatched_logger.info('{}'.format(i.encode(self.encoding)))
 
         mw.reset()
         showInfo('Successfully Rescheduled {} cards\n'
@@ -714,26 +750,34 @@ class TextEditor(QDialog):
         On initialization, __init_json looks for the actual delimiter based on the key
         which was based on reverse lookup
 
+        Skips the Yes/No Prompt if the settings are the same as the JSON file
+
         :param QCloseEvent:
         :return:                None
         """
-        # https://stackoverflow.com/questions/14834494/pyqt-clicking-x-doesnt-trigger-closeevent
-        reply = QMessageBox.question(self, 'Prompt', 'Would you like to save your settings?',
-                                     QMessageBox.Yes, QMessageBox.No)
-
         # https://stackoverflow.com/questions/2568673/inverse-dictionary-lookup-in-python
         if self.delimiter:
             __delimiter = next(key for key, value in DELIMITER_DICT.items() if value == self.delimiter)
         else:
             __delimiter = ''
 
-        conf = {'default_model':            self.selected_model,
-                'default_field_to_match':   self.field_tomatch,
-                'default_num_of_cards':     self.number_of_cards_to_resched_per_note,
-                'default_delimiter':        __delimiter,
-                'enable_add_tag':           self.enable_add_note_tag,
-                'default_encoding':         self.encoding
+        conf = {'default_model': self.selected_model,
+                'default_field_to_match': self.field_tomatch,
+                'default_num_of_cards': self.number_of_cards_to_resched_per_note,
+                'default_delimiter': __delimiter,
+                'enable_add_tag': self.enable_add_note_tag,
+                'default_encoding': self.encoding
                 }
+
+        ''''Skip prompt if the settings are the same'''
+        with open(NEW_PATH + r'\push_existing.json', mode='r') as __hf:
+            __fnoc = json.load(__hf)
+            if all([__fnoc[key] == conf[key] for key, value in conf.items()]):
+                return
+
+        # https://stackoverflow.com/questions/14834494/pyqt-clicking-x-doesnt-trigger-closeevent
+        reply = QMessageBox.question(self, 'Prompt', 'Would you like to save your settings?',
+                                     QMessageBox.Yes, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
             with open(NEW_PATH + r'\push_existing.json', mode='w') as fh:
