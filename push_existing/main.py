@@ -213,6 +213,7 @@ class TextEditor(QDialog):
         self.show_contents = QPushButton('Show Contents')
         self.anki_based_reschedule_button = QPushButton('Anki-Based Resched')
 
+        self.open_unmatched_log_button = QPushButton('Open Unmatched')
         self.open_logfile_button = QPushButton('Open Log')
         self.clear_list = QPushButton('Clear List')
 
@@ -271,6 +272,7 @@ class TextEditor(QDialog):
         self.show_contents.clicked.connect(self.show_contents_signal)
         self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
 
+        self.open_unmatched_log_button.clicked.connect(self.open_unmatched_log)
         self.open_logfile_button.clicked.connect(self.open_log_file)
         self.clear_list.clicked.connect(self.reset_list)
 
@@ -386,6 +388,7 @@ class TextEditor(QDialog):
         h_layout.addWidget(self.show_contents)
         h_layout.addWidget(self.anki_based_reschedule_button)
 
+        h_layout.addWidget(self.open_unmatched_log_button)
         h_layout.addWidget(self.open_logfile_button)
         h_layout.addWidget(self.clear_list)
 
@@ -610,6 +613,15 @@ class TextEditor(QDialog):
 
         elif sys.version_info[0] == 2:
             os.startfile(LOG_PATH)
+
+    @staticmethod
+    def open_unmatched_log():
+        if sys.version_info[0] == 3:
+            from webbrowser import open
+            open(UNMATCHED_LOG_PATH)
+
+        elif sys.version_info[0] == 2:
+            os.startfile(UNMATCHED_LOG_PATH)
 
     # NOTE: this seems to be slower than my original function
     # TODO: I might recode this to use executemany instead, I doubt that'll speed things up though
