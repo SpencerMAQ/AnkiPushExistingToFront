@@ -115,6 +115,7 @@ if False:
 
 # TODO: (IMPORTANT) Not working for Shift JIS
 # TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
+# TODO: (IMPORTANT) Test for schedule-buried and user buried cards
 # TODO: FFS Choose a better name for you add-on
 
 #  ===================== TO_DO_LIST ===================== #
