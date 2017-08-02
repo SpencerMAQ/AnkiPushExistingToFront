@@ -591,30 +591,6 @@ class TextEditor(QDialog):
         self._num_cards_found_learning_due_lcd.display(0)
         self._num_cards_no_matches_lcd.display(0)
 
-    # def show_rescheduled(self):
-    #     if self.matched_vocab:
-    #         for matched in self.matched_vocab:
-    #             showInfo(_from_utf8(matched))
-    #
-    #     else:
-    #         showInfo('None')
-
-    # def show_not_rescheduled(self):
-    #     if self.matchned_but_not_rescheduled:
-    #         for matched_but_not_res in self.matchned_but_not_rescheduled:
-    #             showInfo(_from_utf8(matched_but_not_res))
-    #
-    #     else:
-    #         showInfo('None')
-
-    # def show_not_matched(self):
-    #     if self.unmatched_vocab:
-    #         for unmatched in self.unmatched_vocab:
-    #             showInfo(_from_utf8(unmatched))
-    #
-    #     else:
-    #         showInfo('None')
-
     @staticmethod
     def open_log_file(path):
         """Opens either the Report Log or the CSV container
@@ -799,7 +775,7 @@ class TextEditor(QDialog):
                 'default_encoding':         self.encoding
                 }
 
-        ''''Skip prompt if the settings are the same, but check first if it exists to avoid IOError'''
+        '''Skip prompt if the settings are the same, but check first if it exists to avoid IOError'''
         if os.path.isfile(NEW_PATH + r'\push_existing.json'):
             with open(NEW_PATH + r'\push_existing.json', mode='r') as __hf:
                 __fnoc = json.load(__hf)
