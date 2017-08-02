@@ -40,6 +40,16 @@ def setup_logger(name, log_file, _format=FORMAT, level=logging.DEBUG):
     """Create two or more loggers because writing to a CSV
     Causes the Characters to become messed up even with the
     correct encoding
+
+    Note that the log files are always in UTF-8, never
+    set by the user, i.e. even if the files read are in shift JIS
+    the log files are still in UTF-8
+
+    Args:
+        name:           Name of the logger
+        log_file:       Path to the log file
+        _format:        String format
+        level:          DEBUG by default
     """
     handler = logging.FileHandler(log_file)
     handler.setFormatter(_format)
@@ -57,7 +67,8 @@ PUSH_EXISTING_PATH = ADD_ON_PATH + r'\push_existing'
 if not os.path.exists(PUSH_EXISTING_PATH):
     os.makedirs(PUSH_EXISTING_PATH)
 NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
-# CONFIG_PATH = os.path.join(NEW_PATH, 'push_existing_config.json')
+
+CONFIG_PATH = os.path.join(NEW_PATH, 'push_existing_config.json')   # doesn't work on json?? but works for log
 LOG_PATH = os.path.join(NEW_PATH, 'push_existing.log')
 UNMATCHED_LOG_PATH = os.path.join(NEW_PATH, 'unmatched_vocab.log')
 
@@ -66,14 +77,15 @@ unmatched_logger = setup_logger('unmatched_logger', UNMATCHED_LOG_PATH, _format=
 
 del addon_mgr_instance
 
-DELIMITER_DICT = {'New Line': '\n',
-                  'Tab': '\t',
-                  'One Whitespace': ' ',
-                  '", "(Comma then space)': ', ',
-                  '","(Comma without space)': ',',
-                  '";"(Semicolon without space)': ';',
-                  '"; "(Semicolon with space)': '; '
+DELIMITER_DICT = {'New Line':                       '\n',
+                  'Tab':                            '\t',
+                  'One Whitespace':                 ' ',
+                  '", "(Comma then space)':         ', ',
+                  '","(Comma without space)':       ',',
+                  '";"(Semicolon without space)':   ';',
+                  '"; "(Semicolon with space)':     '; '
                   }
+
 
 # ===================== TEMPORARY STUFF ===================== #
 if False:
@@ -90,28 +102,30 @@ if False:
 #  ===================== TO_DO_LIST ===================== #
 # NOTE : TODO: I would have chosen to do it by decks but there seems to be a problem with the API when using decks
 # TODO: maybe this'd work better if you did by note type instead of deck? (or maybe both)
-# FIXME: Encoding Problems (only for logging when using UTF-8 With BOM) i.e. UTF-8-SIG
-# TODO: Make this app use a QMainWindow by creating a new QApplication instance
 
-# TODO: include functionaly for user to push only CERTAIN CARDS based on the names of the cards (Diffucult)
 
+# FIXME: Encoding Problems (only for logging when using UTF-8 With BOM) i.e. UTF-8-SIG (probably unfixable)
+# Note, this was a big mistake on my part, should have written in UTF-8 by default, but read in self.encoding
+
+# TODO: Make this app use a QMainWindow by creating a new QApplication instance (IMPORANT!)
+
+# TODO: include functionaly for user to push only CERTAIN CARDS based on the NAMES of the cards (Diffucult)
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
-
 # TODO: use generators instead of list comprehensions where possible
 
+# TODO: (IMPORTANT) Not working for Shift JIS
 # TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
 # TODO: FFS Choose a better name for you add-on
-
-# TODO: Add a button to open the unmatched log
 
 #  ===================== TO_DO_LIST ===================== #
 
 
 class TextEditor(QDialog):
     def __init__(self, parent):
-        """
-        Initialize the UI
-        :param parent:      global mw from aqt
+        """Initialize the UI
+
+        Args:
+            parent:     mw
         """
         # TODO:
         '''
@@ -165,8 +179,6 @@ class TextEditor(QDialog):
         The actual delimiter is found through lookup on the global dict DELIMITER_DICT
         The actual delimiter is used by self.delimiter
         Only the key is displayed however, not the acutal delimiter (for ease of use)
-
-        :return:        None
         """
         if os.path.isfile(NEW_PATH + r'\push_existing.json'):
             with open(NEW_PATH + r'\push_existing.json', 'r') as fh:
@@ -190,8 +202,9 @@ class TextEditor(QDialog):
                                                                )
 
             __delimiter_ = conf['default_delimiter']
-            self.delimiter = DELIMITER_DICT[__delimiter_]
-            self._delimiter_combo.setCurrentIndex(self._delimiter_combo.findText(__delimiter_))
+            if __delimiter_:
+                self.delimiter = DELIMITER_DICT[__delimiter_]
+                self._delimiter_combo.setCurrentIndex(self._delimiter_combo.findText(__delimiter_))
 
             self.enable_add_note_tag = conf['enable_add_tag']
             if self.enable_add_note_tag:
@@ -209,13 +222,13 @@ class TextEditor(QDialog):
         """
         QtGui/QtWidget elements
         """
-        self.import_btn = QPushButton('Import CSV')
-        self.show_contents = QPushButton('Show Contents')
-        self.anki_based_reschedule_button = QPushButton('Anki-Based Resched')
+        self.import_btn =                       QPushButton('Import CSV')
+        self.show_contents =                    QPushButton('Show Contents')
+        self.anki_based_reschedule_button =     QPushButton('Anki-Based Resched')
 
-        self.open_unmatched_log_button = QPushButton('Open Unmatched')
-        self.open_logfile_button = QPushButton('Open Log')
-        self.clear_list = QPushButton('Clear List')
+        self.open_unmatched_log_button =        QPushButton('Open Unmatched CSV')
+        self.open_logfile_button =              QPushButton('Open Report Log')
+        self.clear_list =                       QPushButton('Clear List')
 
         # ===================== COMBOX BOXES and RADIO ===================== #
         self._models_combo = QComboBox()
@@ -248,7 +261,7 @@ class TextEditor(QDialog):
         self._encoding_combo = QComboBox()
         self._encoding_combo.addItems(['UTF-8',
                                        'UTF-8-SIG',
-                                       'Shift JIS']
+                                       'Shift-JIS']
                                       )
         self._encoding_combo.setCurrentIndex(0)
 
@@ -272,8 +285,8 @@ class TextEditor(QDialog):
         self.show_contents.clicked.connect(self.show_contents_signal)
         self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
 
-        self.open_unmatched_log_button.clicked.connect(self.open_unmatched_log)
-        self.open_logfile_button.clicked.connect(self.open_log_file)
+        self.open_unmatched_log_button.clicked.connect(lambda: self.open_log_file(path=UNMATCHED_LOG_PATH))
+        self.open_logfile_button.clicked.connect(lambda: self.open_log_file(path=LOG_PATH))
         self.clear_list.clicked.connect(self.reset_list)
 
         # ===================== COMBOX BOXES ===================== #
@@ -306,7 +319,7 @@ class TextEditor(QDialog):
         combo_ver_layout_1.addWidget(self._models_combo)
 
         combo_ver_layout_2 = QVBoxLayout()
-        combo_ver_lay2_label = QLabel('Field to Match')
+        combo_ver_lay2_label = QLabel('Field to Match (Choose Model First)')
         combo_ver_layout_2.addWidget(combo_ver_lay2_label)
         combo_ver_layout_2.addWidget(self._fields_combo)
 
@@ -345,7 +358,7 @@ class TextEditor(QDialog):
 
         # ===================== LCD BOXES ===================== #
         lcd_ver_layout_1 = QVBoxLayout()
-        ver_layout_1_label = QLabel('Imported')
+        ver_layout_1_label = QLabel('Imported from CSV')
         lcd_ver_layout_1.addWidget(ver_layout_1_label)
         lcd_ver_layout_1.addWidget(self._num_imported_cards_lcd)
 
@@ -355,7 +368,7 @@ class TextEditor(QDialog):
         lcd_ver_layout_2.addWidget(self._num_notes_in_deck_lcd)
 
         lcd_ver_layout_3 = QVBoxLayout()
-        ver_layout_3_label = QLabel('Rescheduled')
+        ver_layout_3_label = QLabel('Unsuspended + Rescheduled')
         lcd_ver_layout_3.addWidget(ver_layout_3_label)
         lcd_ver_layout_3.addWidget(self._num_cards_succ_resch_lcd)
 
@@ -365,7 +378,7 @@ class TextEditor(QDialog):
         lcd_ver_layout_4.addWidget(self._num_cards_found_learning_due_lcd)
 
         lcd_ver_layout_5 = QVBoxLayout()
-        ver_layout_5_label = QLabel('No Match')
+        ver_layout_5_label = QLabel('No Matches Found')
         lcd_ver_layout_5.addWidget(ver_layout_5_label)
         lcd_ver_layout_5.addWidget(self._num_cards_no_matches_lcd)
 
@@ -402,8 +415,7 @@ class TextEditor(QDialog):
         self.show()
 
     def _models_combo_changed(self, sender=None):
-        """
-        Clears the fields QComboBox everytime the Index is changed (currentIndexChanged),
+        """Clears the fields QComboBox everytime the Index is changed (currentIndexChanged),
         This clear is necessary so that the 'fields' ComboBox isn't adding fields indefinitely
         everytime the 'models' ComboxBox index changes
 
@@ -413,8 +425,8 @@ class TextEditor(QDialog):
         This function is also used inside __init_json to populate the Models ComboBox
         on initialization if the JSON file exists
 
-        :param sender:      None by default, self._models_combo as sent from signal
-        :return:            None
+        Args:
+            sender:         None by default, self._models_combo as sent from signal (lambda)
         """
         self._fields_combo.clear()
         self.selected_model = self._models_combo.currentText()
@@ -423,6 +435,7 @@ class TextEditor(QDialog):
         __mid = mw.col.models.byName(self.selected_model)['id']     # model ID
         __nids = mw.col.findNotes('mid:' + str(__mid))              # returns a list of noteIds
         try:
+            # stored as attribute in order to be used by _fields combo changed to update No. of cards combobox
             self.__sample_nid = __nids[0]
         except IndexError:
             # when nids is an empty list
@@ -450,8 +463,6 @@ class TextEditor(QDialog):
         The default value however (and the display) is set to the first index, value: 1
         i.e. unless the user explicitly tells it not to
         at which point, the funciton _cards_to_resch_combo_changed is called
-
-        :return:        None
         """
         self._cards_to_resch_combo.clear()
         self.field_tomatch = self._fields_combo.currentText()
@@ -481,13 +492,12 @@ class TextEditor(QDialog):
             self.enable_add_note_tag = False
 
     def import_csv(self, delimiter, encoding):
-        """
-        Import a DSV File with special provisions based on encoding
+        """Import a DSV File with special provisions based on encoding
         Do note the difference between 'utf-8-sig' (with BOM) and 'utf-8'
 
-        :param delimiter:   '\n' by default
-        :param encoding:    'utf-8' by default
-        :return:            None
+        Args:
+            delimiter:      New Line by default (sent by signal)
+            encoding:       UTF-8 by default (sent by signal)
         """
 
         filename = QFileDialog.getOpenFileName(self,
@@ -524,15 +534,14 @@ class TextEditor(QDialog):
             showInfo('Nothing Imported')
 
     def __read_files(self, file, delimiter):
-        """
-        It's annoying that I have to define a new method
+        """It's annoying that I have to define a new method
         Just because it won't recognize self inside the nested function
 
-        :param file:
-        :param delimiter:
-        :return:                None
+        Args:
+            file:           sent by import_csv
+            delimiter:      sent by import_csv
         """
-        contents = file.read()
+        contents = file.read()       # could use readlines but I'm not sure that the vocabs are separated by newlines
         csvreader = contents.split(delimiter)
 
         for line in csvreader:
@@ -551,8 +560,11 @@ class TextEditor(QDialog):
         try:
             showInfo(_from_utf8(*list_of_vocabs))
         except:
-            for vocab in list_of_vocabs:
+            for i, vocab in enumerate(list_of_vocabs):
                 showInfo(_from_utf8(vocab))
+                if i == 2:
+                    # Show only a few of the contents for verification
+                    break
                 # raise
 
     def reset_list(self):
@@ -560,8 +572,6 @@ class TextEditor(QDialog):
         Primarily used as an event in response to the button
         Used in other methods as well (import csv and resched)
         to ensure that the lists they need are empty
-
-        :return:        None
         """
         del self.matched_vocab[:]
         del self.unmatched_vocab[:]
@@ -581,62 +591,57 @@ class TextEditor(QDialog):
         self._num_cards_found_learning_due_lcd.display(0)
         self._num_cards_no_matches_lcd.display(0)
 
-    def show_rescheduled(self):
-        if self.matched_vocab:
-            for matched in self.matched_vocab:
-                showInfo(_from_utf8(matched))
+    # def show_rescheduled(self):
+    #     if self.matched_vocab:
+    #         for matched in self.matched_vocab:
+    #             showInfo(_from_utf8(matched))
+    #
+    #     else:
+    #         showInfo('None')
 
-        else:
-            showInfo('None')
+    # def show_not_rescheduled(self):
+    #     if self.matchned_but_not_rescheduled:
+    #         for matched_but_not_res in self.matchned_but_not_rescheduled:
+    #             showInfo(_from_utf8(matched_but_not_res))
+    #
+    #     else:
+    #         showInfo('None')
 
-    def show_not_rescheduled(self):
-        if self.matchned_but_not_rescheduled:
-            for matched_but_not_res in self.matchned_but_not_rescheduled:
-                showInfo(_from_utf8(matched_but_not_res))
-
-        else:
-            showInfo('None')
-
-    def show_not_matched(self):
-        if self.unmatched_vocab:
-            for unmatched in self.unmatched_vocab:
-                showInfo(_from_utf8(unmatched))
-
-        else:
-            showInfo('None')
-
-    @staticmethod
-    def open_log_file():
-        if sys.version_info[0] == 3:
-            from webbrowser import open
-            open(LOG_PATH)
-
-        elif sys.version_info[0] == 2:
-            os.startfile(LOG_PATH)
+    # def show_not_matched(self):
+    #     if self.unmatched_vocab:
+    #         for unmatched in self.unmatched_vocab:
+    #             showInfo(_from_utf8(unmatched))
+    #
+    #     else:
+    #         showInfo('None')
 
     @staticmethod
-    def open_unmatched_log():
+    def open_log_file(path):
+        """Opens either the Report Log or the CSV container
+        for vocabs without any matches
+        The senders specify a different path depending on the button
+
+        Args:
+            path:       path to the log file (~\Doecuments\Anki\addons\push_existing)
+        """
         if sys.version_info[0] == 3:
             from webbrowser import open
-            open(UNMATCHED_LOG_PATH)
+            open(path)
 
         elif sys.version_info[0] == 2:
-            os.startfile(UNMATCHED_LOG_PATH)
+            os.startfile(path)
 
     # NOTE: this seems to be slower than my original function
-    # TODO: I might recode this to use executemany instead, I doubt that'll speed things up though
     def anki_based_reschedule(self):
         """
         Main function of the program
         Checks every Note > Field if it is inside the
         list of mined words and sets the due date to zero accdngly
         Version 3: same as version 2 except this one uses built-in Anki modules
-
-        :return:    None
         """
 
-        self.number_of_replacements = 0
-        self.reset_list()
+        __number_of_replacements = 0
+        self.reset_list()        # if sender is not a signal, only reset the container for others except vocab
 
         try:
             mid = mw.col.models.byName(self.selected_model)['id']       # model ID
@@ -648,19 +653,12 @@ class TextEditor(QDialog):
             showInfo('Please Select a Field to Match first')
             return
 
-        nids = mw.col.findNotes('mid:' + str(mid))                      # returns a list of noteIds
-
-        main_logger.info('=================================================================\n'
-                         'Version {}\n'.format(__version__) +
-                         'Imported from CSV: \t' +
-                         ', '.join(vocab.encode(self.encoding) for vocab in self.list_of_vocabs)
-                         )
-
         if not self.list_of_vocabs:
             showInfo('The List is empty\n'
                      'Please Import a File before clicking this button')
             return
 
+        nids = mw.col.findNotes('mid:' + str(mid))                      # returns a list of noteIds
         dict_of_note_first_fields = {
             mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>'):
                 note_id
@@ -675,18 +673,38 @@ class TextEditor(QDialog):
                      )
             return
 
+        # For LCD Display
         self.number_of_notes_in_deck = len(list_of_deck_vocabs_20k)
+
+        # Place in try except for UnicodeEncodeError because self.selected_model can sometimes be unicode
+        try:
+            main_logger.info('=================================================================\n'
+                             'Version {}\n'.format(__version__) +
+                             'Imported from CSV: \t' +
+                             ', '.join(vocab.encode('UTF-8') for vocab in self.list_of_vocabs) +
+                             '\t From Model: {}\t with encoding: {}'
+                             .format(self.selected_model, self.encoding)
+                             )
+        except UnicodeEncodeError:
+            main_logger.info('=================================================================\n'
+                             'Version {}\n'.format(__version__) +
+                             'Imported from CSV: \t' +
+                             ', '.join(vocab.encode('UTF-8') for vocab in self.list_of_vocabs) +
+                             '\t From Model: {}\t with encoding: {}'
+                             .format(self.selected_model.encode('UTF-8'), self.encoding)
+                             )
 
         for vocab in self.list_of_vocabs:
             if vocab.strip() in list_of_deck_vocabs_20k:
                 nid = dict_of_note_first_fields[vocab.strip()]
                 cids = mw.col.findCards('nid:' + str(nid))
 
-                # num of cards to resched per note (default = 1)
+                # num of cards to resched per note (default = 1), ensures only the cards specified are rescheduled
                 number_of_cards_to_resched_ctr = 0
                 for card_id in cids:
                     number_of_cards_to_resched_ctr += 1
 
+                    # ensures only the cards specified are rescheduled
                     if number_of_cards_to_resched_ctr >= int(self.number_of_cards_to_resched_per_note) + 1:
                         break
 
@@ -694,13 +712,14 @@ class TextEditor(QDialog):
 
                     if card.type == 0 or card.queue == -1 or card.queue == -2 or card.queue == -3:
                         self.matched_vocab.append(vocab)
-                        self.number_of_replacements += 1
+                        __number_of_replacements += 1
 
                         mw.col.sched.unsuspendCards([card_id])
-                        mw.col.sched.sortCards([card_id], start=self.number_of_replacements, step=1)
+                        # set the due to be next to the previous due, avoiding cards having the same due(exc if siblngs)
+                        mw.col.sched.sortCards([card_id], start=__number_of_replacements, step=1)   # resched
 
                         main_logger.info('Rescheduled card: {} with cardID: \t{}'
-                                    .format(vocab.encode(self.encoding), card_id))
+                                         .format(vocab.encode('UTF-8'), card_id))
 
                         if self.enable_add_note_tag:
                             n = card.note()
@@ -711,15 +730,14 @@ class TextEditor(QDialog):
                     elif card.type != 0:
                         self.matchned_but_not_rescheduled.append(vocab)
                         main_logger.info('Card matched but is already learning/due: \t{}, \tcardID: {}'
-                                    .format(vocab.encode(self.encoding), card_id)
-                                    )
+                                         .format(vocab.encode('UTF-8'), card_id))
 
-                if self.number_of_replacements == len(self.list_of_vocabs) + 1:
+                if __number_of_replacements == len(self.list_of_vocabs) + 1:
                     break
 
             else:
                 self.unmatched_vocab.append(vocab)
-                main_logger.info('No match found: {}'.format(vocab.encode(self.encoding)))
+                main_logger.info('No match found: {}'.format(vocab.encode('UTF-8')))
 
         '''
         Appends unmatched vocabs to a log file which the user can then use to
@@ -729,30 +747,30 @@ class TextEditor(QDialog):
         '''
         if self.unmatched_vocab:
             with open(UNMATCHED_LOG_PATH, mode='r') as __file:
-                lines_from_file = [i.decode(self.encoding).encode(self.encoding).strip()
+                # The log file is UTF-8 by default, so no need to do i.decode(self.encoding)
+                lines_from_file = [i.decode("UTF-8").encode('UTF-8').strip()
                                    for i in __file.readlines()
                                    ]
 
                 for i in self.unmatched_vocab:
-                    if i.encode(self.encoding).strip() not in lines_from_file:
-                        unmatched_logger.info('{}'.format(i.encode(self.encoding)))
+                    if i.encode('UTF-8').strip() not in lines_from_file:
+                        unmatched_logger.info('{}'.format(i.encode('UTF-8')))
 
         mw.reset()
         showInfo('Successfully Rescheduled {} cards\n'
                  'Did not reschedule {} cards because they were either learning or due cards\n'
-                 'Unable to find {} cards'.format(self.number_of_replacements,
+                 'Unable to find {} cards'.format(__number_of_replacements,
                                                   len(self.matchned_but_not_rescheduled),
                                                   len(self.unmatched_vocab)
                                                   )
                  )
         self._num_notes_in_deck_lcd.display(self.number_of_notes_in_deck)
-        self._num_cards_succ_resch_lcd.display(self.number_of_replacements)
+        self._num_cards_succ_resch_lcd.display(__number_of_replacements)
         self._num_cards_found_learning_due_lcd.display(len(self.matchned_but_not_rescheduled))
         self._num_cards_no_matches_lcd.display(len(self.unmatched_vocab))
 
     def closeEvent(self, QCloseEvent):
-        """
-        Creates a JSON file if it doesn't exist
+        """Creates a JSON file if it doesn't exist
         Otherwise, saves the QComboBox and QRadioButton settings
 
         Due to difficulties in lookup when dealing with delimiters such as \n or \t
@@ -764,8 +782,8 @@ class TextEditor(QDialog):
 
         Skips the Yes/No Prompt if the settings are the same as the JSON file
 
-        :param QCloseEvent:
-        :return:                None
+        Args:
+            QCloseEvent:        I have no idea what this is
         """
         # https://stackoverflow.com/questions/2568673/inverse-dictionary-lookup-in-python
         if self.delimiter:
@@ -773,22 +791,25 @@ class TextEditor(QDialog):
         else:
             __delimiter = ''
 
-        conf = {'default_model': self.selected_model,
-                'default_field_to_match': self.field_tomatch,
-                'default_num_of_cards': self.number_of_cards_to_resched_per_note,
-                'default_delimiter': __delimiter,
-                'enable_add_tag': self.enable_add_note_tag,
-                'default_encoding': self.encoding
+        conf = {'default_model':            self.selected_model,
+                'default_field_to_match':   self.field_tomatch,
+                'default_num_of_cards':     self.number_of_cards_to_resched_per_note,
+                'default_delimiter':        __delimiter,
+                'enable_add_tag':           self.enable_add_note_tag,
+                'default_encoding':         self.encoding
                 }
 
-        ''''Skip prompt if the settings are the same'''
-        with open(NEW_PATH + r'\push_existing.json', mode='r') as __hf:
-            __fnoc = json.load(__hf)
-            if all([__fnoc[key] == conf[key] for key, value in conf.items()]):
-                return
+        ''''Skip prompt if the settings are the same, but check first if it exists to avoid IOError'''
+        if os.path.isfile(NEW_PATH + r'\push_existing.json'):
+            with open(NEW_PATH + r'\push_existing.json', mode='r') as __hf:
+                __fnoc = json.load(__hf)
+                if all([__fnoc[key] == conf[key] for key, value in conf.items()]):
+                    return
 
         # https://stackoverflow.com/questions/14834494/pyqt-clicking-x-doesnt-trigger-closeevent
-        reply = QMessageBox.question(self, 'Prompt', 'Would you like to save your settings?',
+        reply = QMessageBox.question(self, 'Save Settings',
+                                     'Would you like to save your config settings?\n'
+                                     'Click \'No\' to retain your previous settings',
                                      QMessageBox.Yes, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
