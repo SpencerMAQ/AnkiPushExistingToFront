@@ -113,6 +113,7 @@ if False:
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 # TODO: use generators instead of list comprehensions where possible
 
+# TODO: (IMPORTANT) Use dictionary get method instead of index lookup to avoid key erorrs
 # TODO: (IMPORTANT) Not working for Shift JIS
 # TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
 # TODO: (IMPORTANT) Test for schedule-buried and user buried cards
@@ -153,6 +154,7 @@ class TextEditor(QDialog):
         self.field_tomatch                          = ''
         self.number_of_cards_to_resched_per_note    = 1
         self.delimiter                              = '\n'
+        self.preferred_csv_directory                = ''
         # self.delimiter = '\r\n'
 
         self.enable_add_note_tag                    = True
@@ -195,26 +197,32 @@ class TextEditor(QDialog):
 
                 if self.field_tomatch:
                     self._fields_combo_changed()
-                    self.number_of_cards_to_resched_per_note = conf['default_num_of_cards']
+                    # self.number_of_cards_to_resched_per_note = conf['default_num_of_cards']
+                    self.number_of_cards_to_resched_per_note = conf.get('default_num_of_cards', 1)
                     self._cards_to_resch_combo.setCurrentIndex(self._cards_to_resch_combo
                                                                .findText(str(self.
                                                                              number_of_cards_to_resched_per_note)
                                                                          )
                                                                )
 
-            __delimiter_ = conf['default_delimiter']
+            # __delimiter_ = conf['default_delimiter'] # deprecate key lookup
+            __delimiter_ = conf.get('default_delimiter', 'New Line')
             if __delimiter_:
                 self.delimiter = DELIMITER_DICT[__delimiter_]
                 self._delimiter_combo.setCurrentIndex(self._delimiter_combo.findText(__delimiter_))
 
-            self.enable_add_note_tag = conf['enable_add_tag']
+            # self.enable_add_note_tag = conf['enable_add_tag']
+            self.enable_add_note_tag = conf.get('enable_add_tag', True)
             if self.enable_add_note_tag:
                 self._yes_tagging_radio.toggle()
             else:
                 self._no_tagging_radio.toggle()
 
-            self.encoding = conf['default_encoding']
+            # self.encoding = conf['default_encoding']
+            self.encoding = conf.get('default_encoding', 'UTF-8')
             self._encoding_combo.setCurrentIndex(self._encoding_combo.findText(self.encoding))
+
+            self.preferred_csv_directory = conf.get('preferred_csv_loc')
         else:
             self.enable_add_note_tag = True
             self._yes_tagging_radio.toggle()
@@ -503,13 +511,15 @@ class TextEditor(QDialog):
 
         filename = QFileDialog.getOpenFileName(self,
                                                'Open CSV',
-                                               os.getenv('HOME'),
+                                               self.preferred_csv_directory if self.preferred_csv_directory
+                                               else os.getenv('HOME'),
                                                'TXT(*.csv *.txt)'
                                                )
 
         if filename:
             self.reset_list()
             del self.list_of_vocabs[:]
+            self.preferred_csv_directory = os.path.abspath(filename)
 
             # EAFP Approach as opposed to LBYL
             try:
@@ -773,7 +783,8 @@ class TextEditor(QDialog):
                 'default_num_of_cards':     self.number_of_cards_to_resched_per_note,
                 'default_delimiter':        __delimiter,
                 'enable_add_tag':           self.enable_add_note_tag,
-                'default_encoding':         self.encoding
+                'default_encoding':         self.encoding,
+                'preferred_csv_loc':        self.preferred_csv_directory
                 }
 
         '''Skip prompt if the settings are the same, but check first if it exists to avoid IOError'''
