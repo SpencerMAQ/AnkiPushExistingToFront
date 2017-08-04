@@ -103,17 +103,13 @@ if False:
 # NOTE : TODO: I would have chosen to do it by decks but there seems to be a problem with the API when using decks
 # TODO: maybe this'd work better if you did by note type instead of deck? (or maybe both)
 
+# TODO: Make this app use a QMainWindow by creating a new QApplication instance (IMPORTANT!)
 
-# FIXME: Encoding Problems (only for logging when using UTF-8 With BOM) i.e. UTF-8-SIG (probably unfixable)
-# Note, this was a big mistake on my part, should have written in UTF-8 by default, but read in self.encoding
-
-# TODO: Make this app use a QMainWindow by creating a new QApplication instance (IMPORANT!)
-
-# TODO: include functionaly for user to push only CERTAIN CARDS based on the NAMES of the cards (Diffucult)
+# TODO: include functionality for user to push only CERTAIN CARDS based on the NAMES of the cards (Difficult)
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 # TODO: use generators instead of list comprehensions where possible
 
-# TODO: (IMPORTANT) Use dictionary get method instead of index lookup to avoid key erorrs
+# TODO: (IMPORTANT) Use dictionary get method instead of index lookup to avoid key errors
 # TODO: (IMPORTANT) Not working for Shift JIS
 # TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
 # TODO: (IMPORTANT) Test for schedule-buried and user buried cards
@@ -122,7 +118,8 @@ if False:
 #  ===================== TO_DO_LIST ===================== #
 
 
-class TextEditor(QDialog):
+
+class PushCards(QDialog):
     def __init__(self, parent):
         """Initialize the UI
 
@@ -141,7 +138,7 @@ class TextEditor(QDialog):
         Radio (tag):                Passing
         JSON                        Passing
         '''
-        super(TextEditor, self).__init__(parent)
+        super(PushCards, self).__init__(parent)
 
         self.matched_vocab                          = []
         self.list_of_vocabs                         = []
@@ -168,6 +165,7 @@ class TextEditor(QDialog):
         self.__init_json()
         self._init_signals()
         self._init_ui()
+
 
     def __init_json(self):
         """
@@ -227,17 +225,18 @@ class TextEditor(QDialog):
             self.enable_add_note_tag = True
             self._yes_tagging_radio.toggle()
 
+
     def _init_buttons(self):
         """
         QtGui/QtWidget elements
         """
-        self.import_btn =                       QPushButton('Import CSV')
-        self.show_contents =                    QPushButton('Show Contents')
-        self.anki_based_reschedule_button =     QPushButton('Anki-Based Resched')
+        self.import_btn                     = QPushButton('Import CSV')
+        self.show_contents                  = QPushButton('Show Contents')
+        self.anki_based_reschedule_button   = QPushButton('Anki-Based Resched')
 
-        self.open_unmatched_log_button =        QPushButton('Open Unmatched CSV')
-        self.open_logfile_button =              QPushButton('Open Report Log')
-        self.clear_list =                       QPushButton('Clear List')
+        self.open_unmatched_log_button      = QPushButton('Open Unmatched CSV')
+        self.open_logfile_button            = QPushButton('Open Report Log')
+        self.clear_list                     = QPushButton('Clear List')
 
         # ===================== COMBOX BOXES and RADIO ===================== #
         self._models_combo = QComboBox()
@@ -289,6 +288,7 @@ class TextEditor(QDialog):
         self._num_cards_no_matches_lcd = QLCDNumber()
         self._num_cards_no_matches_lcd.setFixedHeight(43)
 
+
     def _init_signals(self):
         self.import_btn.clicked.connect(lambda: self.import_csv(self.delimiter, self.encoding))
         self.show_contents.clicked.connect(self.show_contents_signal)
@@ -305,6 +305,7 @@ class TextEditor(QDialog):
         self._delimiter_combo.currentIndexChanged.connect(self.__delimiter_changed)
         self._encoding_combo.currentIndexChanged.connect(self.__encoding_changed)
         self._yes_tagging_radio.toggled.connect(self._enable_disable_tagging)
+
 
     def _init_ui(self):
         """
@@ -423,6 +424,7 @@ class TextEditor(QDialog):
         self.setFocus()
         self.show()
 
+
     def _models_combo_changed(self, sender=None):
         """Clears the fields QComboBox everytime the Index is changed (currentIndexChanged),
         This clear is necessary so that the 'fields' ComboBox isn't adding fields indefinitely
@@ -455,6 +457,7 @@ class TextEditor(QDialog):
         __note = mw.col.getNote(self.__sample_nid)
         self._fields_combo.addItems([field for field in sorted(__note.keys())])
 
+
     def _fields_combo_changed(self):
         """
         Clears the _cards_to_resch_combo ComboBox everytime it is called
@@ -471,7 +474,7 @@ class TextEditor(QDialog):
 
         The default value however (and the display) is set to the first index, value: 1
         i.e. unless the user explicitly tells it not to
-        at which point, the funciton _cards_to_resch_combo_changed is called
+        at which point, the function _cards_to_resch_combo_changed is called
         """
         self._cards_to_resch_combo.clear()
         self.field_tomatch = self._fields_combo.currentText()
@@ -481,6 +484,7 @@ class TextEditor(QDialog):
         self._cards_to_resch_combo.setCurrentIndex(0)
         self.number_of_cards_to_resched_per_note = 1
 
+
     def __delimiter_changed(self):
         """
         Looks up the actual delimiter from the global DELIMITER_DICT
@@ -488,17 +492,21 @@ class TextEditor(QDialog):
         """
         self.delimiter = DELIMITER_DICT[self._delimiter_combo.currentText()]
 
+
     def __encoding_changed(self):
         self.encoding = self._encoding_combo.currentText()
 
+
     def _cards_to_resch_combo_changed(self):
         self.number_of_cards_to_resched_per_note = self._cards_to_resch_combo.currentText()
+
 
     def _enable_disable_tagging(self):
         if self._yes_tagging_radio.isChecked():
             self.enable_add_note_tag = True
         else:
             self.enable_add_note_tag = False
+
 
     def import_csv(self, delimiter, encoding):
         """Import a DSV File with special provisions based on encoding
@@ -544,6 +552,7 @@ class TextEditor(QDialog):
         else:
             showInfo('Nothing Imported')
 
+
     def __read_files(self, file, delimiter):
         """It's annoying that I have to define a new method
         Just because it won't recognize self inside the nested function
@@ -560,6 +569,7 @@ class TextEditor(QDialog):
 
             # for line in file:
             #     self.list_of_vocabs.append(line)
+
 
     def show_contents_signal(self):
         # FiXME: Should show the entire table, not one by one
@@ -578,6 +588,7 @@ class TextEditor(QDialog):
                     break
                 # raise
 
+
     def reset_list(self):
         """
         Primarily used as an event in response to the button
@@ -595,12 +606,14 @@ class TextEditor(QDialog):
                      'Please import a text file to fill the list again')
             self.reset_lcd_display()
 
+
     def reset_lcd_display(self):
         self._num_imported_cards_lcd.display(0)
         self._num_notes_in_deck_lcd.display(0)
         self._num_cards_succ_resch_lcd.display(0)
         self._num_cards_found_learning_due_lcd.display(0)
         self._num_cards_no_matches_lcd.display(0)
+
 
     @staticmethod
     def open_log_file(path):
@@ -617,6 +630,7 @@ class TextEditor(QDialog):
 
         elif sys.version_info[0] == 2:
             os.startfile(path)
+
 
     # NOTE: this seems to be slower than my original function
     def anki_based_reschedule(self):
@@ -756,6 +770,7 @@ class TextEditor(QDialog):
         self._num_cards_found_learning_due_lcd.display(len(self.matchned_but_not_rescheduled))
         self._num_cards_no_matches_lcd.display(len(self.unmatched_vocab))
 
+
     def closeEvent(self, QCloseEvent):
         """Creates a JSON file if it doesn't exist
         Otherwise, saves the QComboBox and QRadioButton settings
@@ -809,8 +824,9 @@ class TextEditor(QDialog):
                           )
 
 
+
 def init_window():
-    mw.texteditor = TextEditor(mw)
+    mw.text_editor = PushCards(mw)
 
 run_action = QAction('Push Existing Vocabulary', mw)
 run_action.setShortcut(QKeySequence(HOTKEY))
