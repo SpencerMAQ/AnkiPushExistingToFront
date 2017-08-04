@@ -108,14 +108,16 @@ if False:
 # TODO: include functionality for user to push only CERTAIN CARDS based on the NAMES of the cards (Difficult)
 # TODO: convert the vocab lists into sets to avoid rescheduling the same card twice
 # TODO: use generators instead of list comprehensions where possible
+# TODO: Only Show non-empty models
 
+# TODO: Separate functions for updating LCD values and delim, radio, encoding based on their actual values
 # TODO: (IMPORTANT) Use dictionary get method instead of index lookup to avoid key errors
 # TODO: (IMPORTANT) Not working for Shift JIS
 # TODO: (IMPORTANT) Show a table of the imported vocab instead of individually
 # TODO: (IMPORTANT) Test for schedule-buried and user buried cards
-# TODO: FFS Choose a better name for you add-on
+# TODO: FFS Choose a better name for you add-on (Push Cards that Match a Field)
 
-# TODO: split this module into different modules (separate for preferences, similiar to yomi)
+# TODO: split this module into different modules (separate for preferences, similar to yomi)
 
 #  ===================== TO_DO_LIST ===================== #
 
@@ -128,18 +130,6 @@ class PushCards(QDialog):
         Args:
             parent:     mw
         """
-        # TODO:
-        '''
-        TESTS:
-        Models:                     Passing (Perfect) TODO: Only Show non-empty models
-        Field to Match:             Works in response to models (Passing)
-        Num cards to resch:         Passing
-        Delim:                      Passing
-        Encoding:                   Passing? (Works, garbage logging for SIG)
-
-        Radio (tag):                Passing
-        JSON                        Passing
-        '''
         super(PushCards, self).__init__(parent)
 
         self.matched_vocab                          = []
@@ -154,7 +144,6 @@ class PushCards(QDialog):
         self.number_of_cards_to_resched_per_note    = 1
         self.delimiter                              = '\n'
         self.preferred_csv_directory                = ''
-        # self.delimiter = '\r\n'
 
         self.enable_add_note_tag                    = True
         self.encoding                               = 'UTF-8'
@@ -197,7 +186,6 @@ class PushCards(QDialog):
 
                 if self.field_tomatch:
                     self._fields_combo_changed()
-                    # self.number_of_cards_to_resched_per_note = conf['default_num_of_cards']
                     self.number_of_cards_to_resched_per_note = conf.get('default_num_of_cards', 1)
                     self._cards_to_resch_combo.setCurrentIndex(self._cards_to_resch_combo
                                                                .findText(str(self.
@@ -205,20 +193,17 @@ class PushCards(QDialog):
                                                                          )
                                                                )
 
-            # __delimiter_ = conf['default_delimiter'] # deprecate key lookup
             __delimiter_ = conf.get('default_delimiter', 'New Line')
             if __delimiter_:
                 self.delimiter = DELIMITER_DICT[__delimiter_]
                 self._delimiter_combo.setCurrentIndex(self._delimiter_combo.findText(__delimiter_))
 
-            # self.enable_add_note_tag = conf['enable_add_tag']
             self.enable_add_note_tag = conf.get('enable_add_tag', True)
             if self.enable_add_note_tag:
                 self._yes_tagging_radio.toggle()
             else:
                 self._no_tagging_radio.toggle()
 
-            # self.encoding = conf['default_encoding']
             self.encoding = conf.get('default_encoding', 'UTF-8')
             self._encoding_combo.setCurrentIndex(self._encoding_combo.findText(self.encoding))
 
@@ -229,9 +214,7 @@ class PushCards(QDialog):
 
 
     def _init_buttons(self):
-        """
-        QtGui/QtWidget elements
-        """
+        """QtGui/QtWidget elements"""
         self.import_btn                     = QPushButton('Import CSV')
         self.show_contents                  = QPushButton('Show Contents')
         self.anki_based_reschedule_button   = QPushButton('Anki-Based Resched')
@@ -253,9 +236,6 @@ class PushCards(QDialog):
         self.field_tomatch = self._fields_combo.currentText()
 
         self._cards_to_resch_combo = QComboBox()
-        # self._cards_to_resch_combo.addItems(['1', '2'])
-        # self._cards_to_resch_combo.setCurrentIndex(0)
-        # self.number_of_cards_to_resched_per_note = int(self._cards_to_resch_combo.currentText())
 
         self._delimiter_combo = QComboBox()
         self._delimiter_combo.addItems(['New Line',
@@ -310,9 +290,7 @@ class PushCards(QDialog):
 
 
     def _init_ui(self):
-        """
-        Initialize Layout
-        """
+        """Initialize Layout"""
         # ===================== SEPARATORS ===================== #
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
@@ -407,8 +385,6 @@ class PushCards(QDialog):
         v_layout.addLayout(lcd_layout)
 
         h_layout = QHBoxLayout()
-
-        # buttons lined horizontally to be added later to v_layout
         h_layout.addWidget(self.import_btn)
         h_layout.addWidget(self.show_contents)
         h_layout.addWidget(self.anki_based_reschedule_button)
@@ -430,11 +406,11 @@ class PushCards(QDialog):
     def _models_combo_changed(self, sender=None):
         """Clears the fields QComboBox everytime the Index is changed (currentIndexChanged),
         This clear is necessary so that the 'fields' ComboBox isn't adding fields indefinitely
-        everytime the 'models' ComboxBox index changes
+        everytime the 'models' ComboBox index changes
 
         It then fills the 'fields' ComboBox based on the selected model: self._models_combo.currentText()
 
-        Aside from being called everytime the Model Combox index changes
+        Aside from being called everytime the Model ComboBox index changes
         This function is also used inside __init_json to populate the Models ComboBox
         on initialization if the JSON file exists
 
@@ -447,6 +423,7 @@ class PushCards(QDialog):
         # NOTE: (IMP!) use index protocol for json objects, dot notation otherwise (DB)
         __mid = mw.col.models.byName(self.selected_model)['id']     # model ID
         __nids = mw.col.findNotes('mid:' + str(__mid))              # returns a list of noteIds
+
         try:
             # stored as attribute in order to be used by _fields combo changed to update No. of cards combobox
             self.__sample_nid = __nids[0]
@@ -604,7 +581,7 @@ class PushCards(QDialog):
 
         if sender.text() == 'Clear List':
             del self.list_of_vocabs[:]
-            showInfo('Succesfully reset the list of cards\n'
+            showInfo('Successfully reset the list of cards\n'
                      'Please import a text file to fill the list again')
             self.reset_lcd_display()
 
@@ -624,7 +601,7 @@ class PushCards(QDialog):
         The senders specify a different path depending on the button
 
         Args:
-            path:       path to the log file (~\Doecuments\Anki\addons\push_existing)
+            path:       path to the log file (~\Documents\Anki\addons\push_existing)
         """
         if sys.version_info[0] == 3:
             from webbrowser import open
@@ -663,8 +640,7 @@ class PushCards(QDialog):
 
         nids = mw.col.findNotes('mid:' + str(mid))                      # returns a list of noteIds
         dict_of_note_first_fields = {
-            mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>'):
-                note_id
+            mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>'): note_id
             for note_id in nids
             }
 
@@ -735,6 +711,7 @@ class PushCards(QDialog):
                         main_logger.info('Card matched but is already learning/due: \t{}, \tcardID: {}'
                                          .format(vocab.encode('UTF-8'), card_id))
 
+                # Just to ensure that it doesn't reschedule more than the vocab count, also reduces load on comp
                 if __number_of_replacements == len(self.list_of_vocabs) + 1:
                     break
 
@@ -750,7 +727,7 @@ class PushCards(QDialog):
         '''
         if self.unmatched_vocab:
             with open(UNMATCHED_LOG_PATH, mode='r') as __file:
-                # The log file is UTF-8 by default, so no need to do i.decode(self.encoding)
+                # The log file is UTF-8 by default, so I need to do i.decode(self.encoding)
                 lines_from_file = [i.decode("UTF-8").encode('UTF-8').strip()
                                    for i in __file.readlines()
                                    ]
@@ -790,10 +767,8 @@ class PushCards(QDialog):
             QCloseEvent:        I have no idea what this is
         """
         # https://stackoverflow.com/questions/2568673/inverse-dictionary-lookup-in-python
-        if self.delimiter:
-            __delimiter = next(key for key, value in DELIMITER_DICT.items() if value == self.delimiter)
-        else:
-            __delimiter = ''
+        __delimiter = next(key for key, value in DELIMITER_DICT.items() if value == self.delimiter) \
+            if self.delimiter else ''
 
         conf = {'default_model':            self.selected_model,
                 'default_field_to_match':   self.field_tomatch,
