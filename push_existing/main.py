@@ -115,6 +115,8 @@ if False:
 # TODO: (IMPORTANT) Test for schedule-buried and user buried cards
 # TODO: FFS Choose a better name for you add-on
 
+# TODO: split this module into different modules (separate for preferences, similiar to yomi)
+
 #  ===================== TO_DO_LIST ===================== #
 
 
@@ -553,15 +555,15 @@ class PushCards(QDialog):
             showInfo('Nothing Imported')
 
 
-    def __read_files(self, file, delimiter):
+    def __read_files(self, _file, delimiter):
         """It's annoying that I have to define a new method
         Just because it won't recognize self inside the nested function
 
         Args:
-            file:           sent by import_csv
+            _file:          sent by import_csv
             delimiter:      sent by import_csv
         """
-        contents = file.read()       # could use readlines but I'm not sure that the vocabs are separated by newlines
+        contents = _file.read()       # could use readlines but I'm not sure that the vocabs are separated by newlines
         csvreader = contents.split(delimiter)
 
         for line in csvreader:
@@ -826,7 +828,7 @@ class PushCards(QDialog):
 
 
 def init_window():
-    mw.text_editor = PushCards(mw)
+    mw.push_cards = PushCards(mw)
 
 run_action = QAction('Push Existing Vocabulary', mw)
 run_action.setShortcut(QKeySequence(HOTKEY))
