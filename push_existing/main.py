@@ -153,12 +153,12 @@ class PushCards(QDialog):
         self.setWindowTitle('Push Existing Vocab Add-On')
 
         self._init_buttons()
-        self.__init_json()
+        self._init_json()
         self._init_signals()
         self._init_ui()
 
 
-    def __init_json(self):
+    def _init_json(self):
         """
         Initialize settings if a JSON file exists
 
@@ -180,12 +180,12 @@ class PushCards(QDialog):
             self._models_combo.setCurrentIndex(self._models_combo.findText(self.selected_model))
 
             if self.selected_model:
-                self._models_combo_changed()
+                self._on_models_combo_index_changed()
                 self.field_to_match = conf['default_field_to_match']
                 self._fields_combo.setCurrentIndex(self._fields_combo.findText(self.field_to_match))
 
                 if self.field_to_match:
-                    self._fields_combo_changed()
+                    self._on_fields_combo_index_changed()
                     self.number_of_cards_to_resched_per_note = conf.get('default_num_of_cards', 1)
                     self._cards_to_resch_combo.setCurrentIndex(self._cards_to_resch_combo
                                                                .findText(str(self.
@@ -273,7 +273,7 @@ class PushCards(QDialog):
 
     def _init_signals(self):
         self.import_btn.clicked.connect(lambda: self.import_csv(self.delimiter, self.encoding))
-        self.show_contents.clicked.connect(self.show_contents_signal)
+        self.show_contents.clicked.connect(self.on_show_contents_clicked)
         self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
 
         self.open_unmatched_log_button.clicked.connect(lambda: self.open_log_file(path=UNMATCHED_LOG_PATH))
@@ -281,11 +281,12 @@ class PushCards(QDialog):
         self.clear_list.clicked.connect(self.reset_list)
 
         # ===================== COMBOBOX BOXES ===================== #
-        self._models_combo.currentIndexChanged.connect(lambda: self._models_combo_changed(sender=self._models_combo))
-        self._fields_combo.currentIndexChanged.connect(self._fields_combo_changed)
-        self._cards_to_resch_combo.currentIndexChanged.connect(self._cards_to_resch_combo_changed)
-        self._delimiter_combo.currentIndexChanged.connect(self.__delimiter_changed)
-        self._encoding_combo.currentIndexChanged.connect(self.__encoding_changed)
+        self._models_combo.currentIndexChanged.connect(
+            lambda: self._on_models_combo_index_changed(sender=self._models_combo))
+        self._fields_combo.currentIndexChanged.connect(self._on_fields_combo_index_changed)
+        self._cards_to_resch_combo.currentIndexChanged.connect(self._on_cards_to_resch_combo_index_changed)
+        self._delimiter_combo.currentIndexChanged.connect(self._on_delimiter_combo_index_changed)
+        self._encoding_combo.currentIndexChanged.connect(self._on_encoding_combo_index_changed)
         self._yes_tagging_radio.toggled.connect(self._enable_disable_tagging)
 
 
@@ -403,7 +404,7 @@ class PushCards(QDialog):
         self.show()
 
 
-    def _models_combo_changed(self, sender=None):
+    def _on_models_combo_index_changed(self, sender=None):
         """Clears the fields QComboBox everytime the Index is changed (currentIndexChanged),
         This clear is necessary so that the 'fields' ComboBox isn't adding fields indefinitely
         everytime the 'models' ComboBox index changes
@@ -437,7 +438,7 @@ class PushCards(QDialog):
         self._fields_combo.addItems([field for field in sorted(__note.keys())])
 
 
-    def _fields_combo_changed(self):
+    def _on_fields_combo_index_changed(self):
         """
         Clears the _cards_to_resch_combo ComboBox everytime it is called
         This clear is to ensure that its contents are only populated
@@ -464,7 +465,7 @@ class PushCards(QDialog):
         self.number_of_cards_to_resched_per_note = 1
 
 
-    def __delimiter_changed(self):
+    def _on_delimiter_combo_index_changed(self):
         """
         Looks up the actual delimiter from the global DELIMITER_DICT
         based on the currentText of self._delimiter_combo
@@ -472,11 +473,11 @@ class PushCards(QDialog):
         self.delimiter = DELIMITER_DICT[self._delimiter_combo.currentText()]
 
 
-    def __encoding_changed(self):
+    def _on_encoding_combo_index_changed(self):
         self.encoding = self._encoding_combo.currentText()
 
 
-    def _cards_to_resch_combo_changed(self):
+    def _on_cards_to_resch_combo_index_changed(self):
         self.number_of_cards_to_resched_per_note = self._cards_to_resch_combo.currentText()
 
 
@@ -550,7 +551,7 @@ class PushCards(QDialog):
             #     self.list_of_vocabs.append(line)
 
 
-    def show_contents_signal(self):
+    def on_show_contents_clicked(self):
         # FiXME: Should show the entire table, not one by one
         list_of_vocabs = self.list_of_vocabs_from_csv
 
