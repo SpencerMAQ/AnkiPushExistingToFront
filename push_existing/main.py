@@ -133,14 +133,14 @@ class PushCards(QDialog):
         super(PushCards, self).__init__(parent)
 
         self.matched_vocab                          = []
-        self.list_of_vocabs                         = []
+        self.list_of_vocabs_from_csv                = []
         self.unmatched_vocab                        = []
-        self.matchned_but_not_rescheduled           = []
+        self.matched_but_not_rescheduled            = []
 
-        # ===================== COMBOX BOXES ===================== #
+        # ===================== COMBOBOX BOXES ===================== #
         self.selected_deck                          = ''
         self.selected_model                         = ''
-        self.field_tomatch                          = ''
+        self.field_to_match                         = ''
         self.number_of_cards_to_resched_per_note    = 1
         self.delimiter                              = '\n'
         self.preferred_csv_directory                = ''
@@ -170,7 +170,7 @@ class PushCards(QDialog):
         The Delimiter stored inside the JSON file is not the actual delimiter but is the key
         The actual delimiter is found through lookup on the global dict DELIMITER_DICT
         The actual delimiter is used by self.delimiter
-        Only the key is displayed however, not the acutal delimiter (for ease of use)
+        Only the key is displayed however, not the actual delimiter (for ease of use)
         """
         if os.path.isfile(NEW_PATH + r'\push_existing.json'):
             with open(NEW_PATH + r'\push_existing.json', 'r') as fh:
@@ -181,10 +181,10 @@ class PushCards(QDialog):
 
             if self.selected_model:
                 self._models_combo_changed()
-                self.field_tomatch = conf['default_field_to_match']
-                self._fields_combo.setCurrentIndex(self._fields_combo.findText(self.field_tomatch))
+                self.field_to_match = conf['default_field_to_match']
+                self._fields_combo.setCurrentIndex(self._fields_combo.findText(self.field_to_match))
 
-                if self.field_tomatch:
+                if self.field_to_match:
                     self._fields_combo_changed()
                     self.number_of_cards_to_resched_per_note = conf.get('default_num_of_cards', 1)
                     self._cards_to_resch_combo.setCurrentIndex(self._cards_to_resch_combo
@@ -223,7 +223,7 @@ class PushCards(QDialog):
         self.open_logfile_button            = QPushButton('Open Report Log')
         self.clear_list                     = QPushButton('Clear List')
 
-        # ===================== COMBOX BOXES and RADIO ===================== #
+        # ===================== COMBOBOX BOXES and RADIO ===================== #
         self._models_combo = QComboBox()
 
         self._models_combo.addItems([model for model in sorted(mw.col.models.allNames())])
@@ -233,7 +233,7 @@ class PushCards(QDialog):
         self._fields_combo = QComboBox()
         # self._fields_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self._fields_combo.setMinimumWidth(236)
-        self.field_tomatch = self._fields_combo.currentText()
+        self.field_to_match = self._fields_combo.currentText()
 
         self._cards_to_resch_combo = QComboBox()
 
@@ -280,7 +280,7 @@ class PushCards(QDialog):
         self.open_logfile_button.clicked.connect(lambda: self.open_log_file(path=LOG_PATH))
         self.clear_list.clicked.connect(self.reset_list)
 
-        # ===================== COMBOX BOXES ===================== #
+        # ===================== COMBOBOX BOXES ===================== #
         self._models_combo.currentIndexChanged.connect(lambda: self._models_combo_changed(sender=self._models_combo))
         self._fields_combo.currentIndexChanged.connect(self._fields_combo_changed)
         self._cards_to_resch_combo.currentIndexChanged.connect(self._cards_to_resch_combo_changed)
@@ -456,7 +456,7 @@ class PushCards(QDialog):
         at which point, the function _cards_to_resch_combo_changed is called
         """
         self._cards_to_resch_combo.clear()
-        self.field_tomatch = self._fields_combo.currentText()
+        self.field_to_match = self._fields_combo.currentText()
 
         __cids = mw.col.findCards('nid:' + str(self.__sample_nid))
         self._cards_to_resch_combo.addItems([str(num+1) for num in range(len(__cids))])
@@ -505,7 +505,7 @@ class PushCards(QDialog):
 
         if filename:
             self.reset_list()
-            del self.list_of_vocabs[:]
+            del self.list_of_vocabs_from_csv[:]
             self.preferred_csv_directory = os.path.abspath(filename)
 
             # EAFP Approach as opposed to LBYL
@@ -522,11 +522,11 @@ class PushCards(QDialog):
             except OSError as e:
                 showInfo('Could not process the file because {}'.format(str(e)))
 
-        if filename and self.list_of_vocabs:
+        if filename and self.list_of_vocabs_from_csv:
             self.reset_lcd_display()
-            showInfo('Successfully Imported {} lines from CSV'.format(len(self.list_of_vocabs)))
-            self._num_imported_cards_lcd.display(len(self.list_of_vocabs))
-        elif not filename and self.list_of_vocabs:
+            showInfo('Successfully Imported {} lines from CSV'.format(len(self.list_of_vocabs_from_csv)))
+            self._num_imported_cards_lcd.display(len(self.list_of_vocabs_from_csv))
+        elif not filename and self.list_of_vocabs_from_csv:
             showInfo('Nothing Imported\nThe contents of your previous import are retained')
         else:
             showInfo('Nothing Imported')
@@ -544,7 +544,7 @@ class PushCards(QDialog):
         csvreader = contents.split(delimiter)
 
         for line in csvreader:
-            self.list_of_vocabs.append(line.strip('\r'))
+            self.list_of_vocabs_from_csv.append(line.strip('\r'))
 
             # for line in file:
             #     self.list_of_vocabs.append(line)
@@ -552,14 +552,14 @@ class PushCards(QDialog):
 
     def show_contents_signal(self):
         # FiXME: Should show the entire table, not one by one
-        list_of_vocabs = self.list_of_vocabs
+        list_of_vocabs = self.list_of_vocabs_from_csv
 
         if not list_of_vocabs:
             showInfo('The list is empty')
 
         try:
             showInfo(_from_utf8(*list_of_vocabs))
-        except:
+        except Exception as e:
             for i, vocab in enumerate(list_of_vocabs):
                 showInfo(_from_utf8(vocab))
                 if i == 2:
@@ -576,11 +576,11 @@ class PushCards(QDialog):
         """
         del self.matched_vocab[:]
         del self.unmatched_vocab[:]
-        del self.matchned_but_not_rescheduled[:]
+        del self.matched_but_not_rescheduled[:]
         sender = self.sender()
 
         if sender.text() == 'Clear List':
-            del self.list_of_vocabs[:]
+            del self.list_of_vocabs_from_csv[:]
             showInfo('Successfully reset the list of cards\n'
                      'Please import a text file to fill the list again')
             self.reset_lcd_display()
@@ -629,18 +629,18 @@ class PushCards(QDialog):
             showInfo('Please Choose a Note Type First')
             return
 
-        if not self.field_tomatch:
+        if not self.field_to_match:
             showInfo('Please Select a Field to Match first')
             return
 
-        if not self.list_of_vocabs:
+        if not self.list_of_vocabs_from_csv:
             showInfo('The List is empty\n'
                      'Please Import a File before clicking this button')
             return
 
         nids = mw.col.findNotes('mid:' + str(mid))                      # returns a list of noteIds
         dict_of_note_first_fields = {
-            mw.col.getNote(note_id)[self.field_tomatch].strip().strip('<span>').strip('</span>'): note_id
+            mw.col.getNote(note_id)[self.field_to_match].strip().strip('<span>').strip('</span>'): note_id
             for note_id in nids
             }
 
@@ -660,7 +660,7 @@ class PushCards(QDialog):
             main_logger.info('=================================================================\n'
                              'Version {}\n'.format(__version__) +
                              'Imported from CSV: \t' +
-                             ', '.join(vocab.encode('UTF-8') for vocab in self.list_of_vocabs) +
+                             ', '.join(vocab.encode('UTF-8') for vocab in self.list_of_vocabs_from_csv) +
                              '\t From Model: {}\t with encoding: {}'
                              .format(self.selected_model, self.encoding)
                              )
@@ -668,12 +668,12 @@ class PushCards(QDialog):
             main_logger.info('=================================================================\n'
                              'Version {}\n'.format(__version__) +
                              'Imported from CSV: \t' +
-                             ', '.join(vocab.encode('UTF-8') for vocab in self.list_of_vocabs) +
+                             ', '.join(vocab.encode('UTF-8') for vocab in self.list_of_vocabs_from_csv) +
                              '\t From Model: {}\t with encoding: {}'
                              .format(self.selected_model.encode('UTF-8'), self.encoding)
                              )
 
-        for vocab in self.list_of_vocabs:
+        for vocab in self.list_of_vocabs_from_csv:
             if vocab.strip() in list_of_deck_vocabs_20k:
                 nid = dict_of_note_first_fields[vocab.strip()]
                 cids = mw.col.findCards('nid:' + str(nid))
@@ -707,12 +707,12 @@ class PushCards(QDialog):
                             n.flush()
 
                     elif card.type != 0:
-                        self.matchned_but_not_rescheduled.append(vocab)
+                        self.matched_but_not_rescheduled.append(vocab)
                         main_logger.info('Card matched but is already learning/due: \t{}, \tcardID: {}'
                                          .format(vocab.encode('UTF-8'), card_id))
 
                 # Just to ensure that it doesn't reschedule more than the vocab count, also reduces load on comp
-                if __number_of_replacements == len(self.list_of_vocabs) + 1:
+                if __number_of_replacements == len(self.list_of_vocabs_from_csv) + 1:
                     break
 
             else:
@@ -740,13 +740,13 @@ class PushCards(QDialog):
         showInfo('Successfully Rescheduled {} cards\n'
                  'Did not reschedule {} cards because they were either learning or due cards\n'
                  'Unable to find {} cards'.format(__number_of_replacements,
-                                                  len(self.matchned_but_not_rescheduled),
+                                                  len(self.matched_but_not_rescheduled),
                                                   len(self.unmatched_vocab)
                                                   )
                  )
         self._num_notes_in_deck_lcd.display(self.number_of_notes_in_deck)
         self._num_cards_succ_resch_lcd.display(__number_of_replacements)
-        self._num_cards_found_learning_due_lcd.display(len(self.matchned_but_not_rescheduled))
+        self._num_cards_found_learning_due_lcd.display(len(self.matched_but_not_rescheduled))
         self._num_cards_no_matches_lcd.display(len(self.unmatched_vocab))
 
 
@@ -771,7 +771,7 @@ class PushCards(QDialog):
             if self.delimiter else ''
 
         conf = {'default_model':            self.selected_model,
-                'default_field_to_match':   self.field_tomatch,
+                'default_field_to_match':   self.field_to_match,
                 'default_num_of_cards':     self.number_of_cards_to_resched_per_note,
                 'default_delimiter':        __delimiter,
                 'enable_add_tag':           self.enable_add_note_tag,
