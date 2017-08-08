@@ -53,11 +53,12 @@ main_logger = setup_logger('main_logger', LOG_PATH)
 del addon_mgr_instance
 
 
+# https://stackoverflow.com/questions/11731136/python-class-method-decorator-w-self-arguments
 def calculate_time(f):
     @wraps(f)
-    def wrap(*args, **kwargs):
+    def wrap(self):
         before = time()
-        f(*args, **kwargs)
+        f(self)
         after = time()
         elapsed = after - before
         main_logger.info('function "{}" took {} seconds'
