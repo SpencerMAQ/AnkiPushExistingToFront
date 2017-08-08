@@ -13,6 +13,7 @@ import sys
 import json
 import logging
 
+from .utils import setup_logger
 from .utils import calculate_time
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 5:
@@ -34,33 +35,7 @@ TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
 
 # ===================== DO NOT EDIT BEYOND THIS LINE ===================== #
 # https://stackoverflow.com/questions/11232230/logging-to-two-files-with-different-settings
-FORMAT = logging.Formatter('%(levelname)s \t| %(asctime)s: \t%(message)s')
 UNMATCHED_FORMAT = logging.Formatter('%(message)s')
-
-
-def setup_logger(name, log_file, _format=FORMAT, level=logging.DEBUG):
-    """Create two or more loggers because writing to a CSV
-    Causes the Characters to become messed up even with the
-    correct encoding
-
-    Note that the log files are always in UTF-8, never
-    set by the user, i.e. even if the files read are in shift JIS
-    the log files are still in UTF-8
-
-    Args:
-        name:           Name of the logger
-        log_file:       Path to the log file
-        _format:        String format
-        level:          DEBUG by default
-    """
-    handler = logging.FileHandler(log_file)
-    handler.setFormatter(_format)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.addHandler(handler)
-
-    return logger
 
 addon_mgr_instance = AddonManager(mw)
 ADD_ON_PATH = addon_mgr_instance.addonsFolder()
