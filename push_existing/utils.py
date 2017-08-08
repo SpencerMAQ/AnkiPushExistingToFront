@@ -16,4 +16,4 @@ def calculate_time(f):
         after = time()
         elapsed = after - before
         return elapsed
-    return wrap()
+    return wrap
