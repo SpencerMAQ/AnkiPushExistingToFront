@@ -3,11 +3,13 @@
 # This file is part of the Push Existing Vocab add-on for Anki
 # Copyright: SpencerMAQ (Michael Spencer Quinto) <spencer.michael.q@gmail.com> 2017
 # License: GNU AGPL, version 3 or later; https://www.gnu.org/licenses/agpl-3.0.en.html
+from aqt.addons import AddonManager
+from aqt import mw
 import logging
+import os
+import sys
 from functools import wraps
 from time import time
-
-from .main import main_logger
 
 
 FORMAT = logging.Formatter('%(levelname)s \t| %(asctime)s: \t%(message)s')
@@ -36,6 +38,19 @@ def setup_logger(name, log_file, _format=FORMAT, level=logging.DEBUG):
     logger.addHandler(handler)
 
     return logger
+
+
+addon_mgr_instance = AddonManager(mw)
+ADD_ON_PATH = addon_mgr_instance.addonsFolder()
+PUSH_EXISTING_PATH = ADD_ON_PATH + r'\push_existing'
+
+if not os.path.exists(PUSH_EXISTING_PATH):
+    os.makedirs(PUSH_EXISTING_PATH)
+NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
+LOG_PATH = os.path.join(NEW_PATH, 'push_existing.log')
+main_logger = setup_logger('main_logger', LOG_PATH)
+
+del addon_mgr_instance
 
 
 def calculate_time(f):
