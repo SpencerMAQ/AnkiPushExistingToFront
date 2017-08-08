@@ -10,7 +10,7 @@ import os
 import sys
 from functools import wraps
 from time import time
-
+from aqt.utils import showInfo
 
 FORMAT = logging.Formatter('%(levelname)s \t| %(asctime)s: \t%(message)s')
 
@@ -48,6 +48,7 @@ if not os.path.exists(PUSH_EXISTING_PATH):
     os.makedirs(PUSH_EXISTING_PATH)
 NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
 LOG_PATH = os.path.join(NEW_PATH, 'push_existing.log')
+CALL_LOG_PATH = os.path.join(NEW_PATH, 'debug_call_log.log')
 # I don't know why, but if you set the name of the logger to main_logger (same as main.py)
 # logging entries double up
 speed_logger = setup_logger('speed_logger', LOG_PATH)
@@ -56,15 +57,44 @@ del addon_mgr_instance
 
 
 # https://stackoverflow.com/questions/11731136/python-class-method-decorator-w-self-arguments
+# FIXME: why is it that wrap can't accept *args?? isn't self a positional arg?
+# NOTE: if you wan't to use this decorator on a function, you must enclose the signal in a lambda
+# That way, it passes the function itself as an argument instead of a flag (bool)
 def calculate_time(f):
     @wraps(f)
-    # def wrap(self):
-    # FIXME: why is it that wrap can't accept *args?? isn't self a positional arg?
-    def wrap(self):
+    def wrap(self=None, *args, **kwargs):
         before = time()
-        f(self)
+        f(self, *args, **kwargs)
         after = time()
         elapsed = after - before
         speed_logger.info('function "{}" took {} seconds | self = {}'
                           .format(f.__name__, elapsed, self))
     return wrap
+
+
+call_logger = setup_logger('call_logger', LOG_PATH)
+
+
+def trace_calls(f):
+    @wraps(f)
+    def wrap(instance=None, *args, **kwargs):
+        call_logger.info('function: "{}" | args: {} | kwargs: {}'
+                         .format(f.__name__, args, kwargs))
+    return wrap
+
+
+# https://stackoverflow.com/questions/11232230/logging-to-two-files-with-different-settings
+def open_log_file(path):
+    """Opens either the Report Log or the CSV container
+    for vocabs without any matches
+    The senders specify a different path depending on the button
+
+    Args:
+        path:       path to the log file (~\Documents\Anki\addons\push_existing)
+    """
+    if sys.version_info[0] == 3:
+        from webbrowser import open
+        open(path)
+
+    elif sys.version_info[0] == 2:
+        os.startfile(path)
