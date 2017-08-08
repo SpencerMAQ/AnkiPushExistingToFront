@@ -48,7 +48,9 @@ if not os.path.exists(PUSH_EXISTING_PATH):
     os.makedirs(PUSH_EXISTING_PATH)
 NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
 LOG_PATH = os.path.join(NEW_PATH, 'push_existing.log')
-main_logger = setup_logger('main_logger', LOG_PATH)
+# I don't know why, but if you set the name of the logger to main_logger (same as main.py)
+# logging entries double up
+speed_logger = setup_logger('speed_logger', LOG_PATH)
 
 del addon_mgr_instance
 
@@ -56,11 +58,13 @@ del addon_mgr_instance
 # https://stackoverflow.com/questions/11731136/python-class-method-decorator-w-self-arguments
 def calculate_time(f):
     @wraps(f)
+    # def wrap(self):
+    # FIXME: why is it that wrap can't accept *args?? isn't self a positional arg?
     def wrap(self):
         before = time()
         f(self)
         after = time()
         elapsed = after - before
-        main_logger.info('function "{}" took {} seconds'
-                         .format(f.__name__, elapsed))
+        speed_logger.info('function "{}" took {} seconds | self = {}'
+                          .format(f.__name__, elapsed, self))
     return wrap
