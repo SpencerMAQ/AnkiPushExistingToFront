@@ -72,12 +72,13 @@ def calculate_time(f):
     return wrap
 
 
-call_logger = setup_logger('call_logger', LOG_PATH)
+call_logger = setup_logger('call_logger', CALL_LOG_PATH)
 
 
 def trace_calls(f):
     @wraps(f)
     def wrap(instance=None, *args, **kwargs):
+        f(instance, *args, **kwargs)
         call_logger.info('function: "{}" | args: {} | kwargs: {}'
                          .format(f.__name__, args, kwargs))
     return wrap

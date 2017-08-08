@@ -16,6 +16,7 @@ import logging
 from .utils import setup_logger
 from .utils import calculate_time
 from .utils import open_log_file
+from .utils import trace_calls
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 5:
     from functools import lru_cache
@@ -135,6 +136,7 @@ class PushCards(QDialog):
         self._init_ui()
 
 
+    @trace_calls
     def _init_json(self):
         """
         Initialize settings if a JSON file exists
@@ -250,21 +252,21 @@ class PushCards(QDialog):
 
     def _init_signals(self):
         self.import_btn.clicked.connect(lambda: self.import_csv(self.delimiter, self.encoding))
-        self.show_contents.clicked.connect(self.on_show_contents_clicked)
-        self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
+        self.show_contents.clicked.connect(lambda: self.on_show_contents_clicked())
+        self.anki_based_reschedule_button.clicked.connect(lambda: self.anki_based_reschedule())
 
         self.open_unmatched_log_button.clicked.connect(lambda: open_log_file(path=UNMATCHED_LOG_PATH))
         self.open_logfile_button.clicked.connect(lambda: open_log_file(path=LOG_PATH))
-        self.clear_list.clicked.connect(self.reset_list)
+        self.clear_list.clicked.connect(lambda: self.reset_list())
 
         # ===================== COMBOBOX BOXES ===================== #
         self._models_combo.currentIndexChanged.connect(
             lambda: self._on_models_combo_index_changed(sender=self._models_combo))
-        self._fields_combo.currentIndexChanged.connect(self._on_fields_combo_index_changed)
-        self._cards_to_resch_combo.currentIndexChanged.connect(self._on_cards_to_resch_combo_index_changed)
-        self._delimiter_combo.currentIndexChanged.connect(self._on_delimiter_combo_index_changed)
-        self._encoding_combo.currentIndexChanged.connect(self._on_encoding_combo_index_changed)
-        self._yes_tagging_radio.toggled.connect(self._enable_disable_tagging)
+        self._fields_combo.currentIndexChanged.connect(lambda: self._on_fields_combo_index_changed())
+        self._cards_to_resch_combo.currentIndexChanged.connect(lambda: self._on_cards_to_resch_combo_index_changed())
+        self._delimiter_combo.currentIndexChanged.connect(lambda: self._on_delimiter_combo_index_changed())
+        self._encoding_combo.currentIndexChanged.connect(lambda: self._on_encoding_combo_index_changed())
+        self._yes_tagging_radio.toggled.connect(lambda: self._enable_disable_tagging())
 
 
     def _init_ui(self):
@@ -381,6 +383,7 @@ class PushCards(QDialog):
         self.show()
 
 
+    @trace_calls
     def _on_models_combo_index_changed(self, sender=None):
         """Clears the fields QComboBox everytime the Index is changed (currentIndexChanged),
         This clear is necessary so that the 'fields' ComboBox isn't adding fields indefinitely
@@ -415,6 +418,7 @@ class PushCards(QDialog):
         self._fields_combo.addItems([field for field in sorted(__note.keys())])
 
 
+    @trace_calls
     def _on_fields_combo_index_changed(self):
         """
         Clears the _cards_to_resch_combo ComboBox everytime it is called
@@ -442,6 +446,7 @@ class PushCards(QDialog):
         self.number_of_cards_to_resched_per_note = 1
 
 
+    @trace_calls
     def _on_delimiter_combo_index_changed(self):
         """
         Looks up the actual delimiter from the global DELIMITER_DICT
@@ -450,14 +455,17 @@ class PushCards(QDialog):
         self.delimiter = DELIMITER_DICT[self._delimiter_combo.currentText()]
 
 
+    @trace_calls
     def _on_encoding_combo_index_changed(self):
         self.encoding = self._encoding_combo.currentText()
 
 
+    @trace_calls
     def _on_cards_to_resch_combo_index_changed(self):
         self.number_of_cards_to_resched_per_note = self._cards_to_resch_combo.currentText()
 
 
+    @trace_calls
     def _enable_disable_tagging(self):
         if self._yes_tagging_radio.isChecked():
             self.enable_add_note_tag = True
@@ -465,6 +473,7 @@ class PushCards(QDialog):
             self.enable_add_note_tag = False
 
 
+    @trace_calls
     def import_csv(self, delimiter, encoding):
         """Import a DSV File with special provisions based on encoding
         Do note the difference between 'utf-8-sig' (with BOM) and 'utf-8'
@@ -527,7 +536,7 @@ class PushCards(QDialog):
             # for line in file:
             #     self.list_of_vocabs.append(line)
 
-
+    @trace_calls
     def on_show_contents_clicked(self):
         # FiXME: Should show the entire table, not one by one
         list_of_vocabs = self.list_of_vocabs_from_csv
@@ -546,6 +555,7 @@ class PushCards(QDialog):
                 # raise
 
 
+    @trace_calls
     def reset_list(self):
         """
         Primarily used as an event in response to the button
@@ -564,6 +574,7 @@ class PushCards(QDialog):
             self.reset_lcd_display()
 
 
+    @trace_calls
     def reset_lcd_display(self):
         self._num_imported_cards_lcd.display(0)
         self._num_notes_in_deck_lcd.display(0)
@@ -712,6 +723,7 @@ class PushCards(QDialog):
         self._num_cards_no_matches_lcd.display(len(self.unmatched_vocab))
 
 
+    @trace_calls
     def closeEvent(self, QCloseEvent):
         """Creates a JSON file if it doesn't exist
         Otherwise, saves the QComboBox and QRadioButton settings
