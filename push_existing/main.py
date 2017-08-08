@@ -584,6 +584,7 @@ class PushCards(QDialog):
 
 
     # NOTE: this seems to be slower than my original function
+    @trace_calls
     @calculate_time
     def anki_based_reschedule(self):
         """
