@@ -15,6 +15,7 @@ import logging
 
 from .utils import setup_logger
 from .utils import calculate_time
+from .utils import open_log_file
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 5:
     from functools import lru_cache
@@ -34,7 +35,6 @@ TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
 
 
 # ===================== DO NOT EDIT BEYOND THIS LINE ===================== #
-# https://stackoverflow.com/questions/11232230/logging-to-two-files-with-different-settings
 UNMATCHED_FORMAT = logging.Formatter('%(message)s')
 
 addon_mgr_instance = AddonManager(mw)
@@ -253,8 +253,8 @@ class PushCards(QDialog):
         self.show_contents.clicked.connect(self.on_show_contents_clicked)
         self.anki_based_reschedule_button.clicked.connect(self.anki_based_reschedule)
 
-        self.open_unmatched_log_button.clicked.connect(lambda: self.open_log_file(path=UNMATCHED_LOG_PATH))
-        self.open_logfile_button.clicked.connect(lambda: self.open_log_file(path=LOG_PATH))
+        self.open_unmatched_log_button.clicked.connect(lambda: open_log_file(path=UNMATCHED_LOG_PATH))
+        self.open_logfile_button.clicked.connect(lambda: open_log_file(path=LOG_PATH))
         self.clear_list.clicked.connect(self.reset_list)
 
         # ===================== COMBOBOX BOXES ===================== #
@@ -570,23 +570,6 @@ class PushCards(QDialog):
         self._num_cards_succ_resch_lcd.display(0)
         self._num_cards_found_learning_due_lcd.display(0)
         self._num_cards_no_matches_lcd.display(0)
-
-
-    @staticmethod
-    def open_log_file(path):
-        """Opens either the Report Log or the CSV container
-        for vocabs without any matches
-        The senders specify a different path depending on the button
-
-        Args:
-            path:       path to the log file (~\Documents\Anki\addons\push_existing)
-        """
-        if sys.version_info[0] == 3:
-            from webbrowser import open
-            open(path)
-
-        elif sys.version_info[0] == 2:
-            os.startfile(path)
 
 
     # NOTE: this seems to be slower than my original function
