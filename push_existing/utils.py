@@ -10,7 +10,6 @@ import os
 import sys
 from functools import wraps
 from time import time
-from aqt.utils import showInfo
 
 FORMAT = logging.Formatter('%(levelname)s \t| %(asctime)s: \t%(message)s')
 
@@ -62,13 +61,13 @@ del addon_mgr_instance
 # That way, it passes the function itself as an argument instead of a flag (bool)
 def calculate_time(f):
     @wraps(f)
-    def wrap(self=None, *args, **kwargs):
+    def wrap(*args, **kwargs):
         before = time()
-        f(self, *args, **kwargs)
+        f(*args, **kwargs)
         after = time()
         elapsed = after - before
         speed_logger.info('function "{}" took {} seconds | self = {}'
-                          .format(f.__name__, elapsed, self))
+                          .format(f.__name__, elapsed, args[0].__name__))
     return wrap
 
 
@@ -77,8 +76,8 @@ call_logger = setup_logger('call_logger', CALL_LOG_PATH)
 
 def trace_calls(f):
     @wraps(f)
-    def wrap(instance=None, *args, **kwargs):
-        f(instance, *args, **kwargs)
+    def wrap(*args, **kwargs):
+        f(*args, **kwargs)
         call_logger.info('function: "{}" | args: {} | kwargs: {}'
                          .format(f.__name__, args, kwargs))
     return wrap
