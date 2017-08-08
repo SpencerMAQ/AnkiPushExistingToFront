@@ -13,6 +13,8 @@ import sys
 import json
 import logging
 
+from .utils import calculate_time
+
 if sys.version_info[0] == 3 and sys.version_info[1] >= 5:
     from functools import lru_cache
 
@@ -613,6 +615,7 @@ class PushCards(QDialog):
 
 
     # NOTE: this seems to be slower than my original function
+    @calculate_time
     def anki_based_reschedule(self):
         """
         Main function of the program

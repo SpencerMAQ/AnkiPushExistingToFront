@@ -7,6 +7,8 @@
 from functools import wraps
 from time import time
 
+from .main import main_logger
+
 
 def calculate_time(f):
     @wraps(f)
@@ -15,5 +17,6 @@ def calculate_time(f):
         f(*args, **kwargs)
         after = time()
         elapsed = after - before
-        return elapsed
+        main_logger.info('function "{}" took {} seconds'
+                         .format(f.__name__, elapsed))
     return wrap
