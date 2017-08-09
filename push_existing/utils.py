@@ -63,8 +63,7 @@ def calculate_time(f):
     def wrap(*args, **kwargs):
         before = time()
         result = f(*args, **kwargs)
-        after = time()
-        elapsed = after - before
+        elapsed = time() - before
         speed_logger.info('function "{}" took {} seconds | self = {}'
                           .format(f.__name__, elapsed, args[0].__name__))
         return result
