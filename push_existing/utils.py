@@ -56,30 +56,33 @@ del addon_mgr_instance
 
 
 # https://stackoverflow.com/questions/11731136/python-class-method-decorator-w-self-arguments
-# FIXME: why is it that wrap can't accept *args?? isn't self a positional arg?
 # NOTE: if you wan't to use this decorator on a function, you must enclose the signal in a lambda
 # That way, it passes the function itself as an argument instead of a flag (bool)
 def calculate_time(f):
     @wraps(f)
     def wrap(*args, **kwargs):
         before = time()
-        f(*args, **kwargs)
+        result = f(*args, **kwargs)
         after = time()
         elapsed = after - before
         speed_logger.info('function "{}" took {} seconds | self = {}'
                           .format(f.__name__, elapsed, args[0].__name__))
+        return result
     return wrap
 
 
 call_logger = setup_logger('call_logger', CALL_LOG_PATH)
 
 
+# I'm not sure but just in case the decorated function has a return value, return result ensures that
+# the value is passed?
 def trace_calls(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        f(*args, **kwargs)
+        result = f(*args, **kwargs)
         call_logger.info('function: "{}" | args: {} | kwargs: {}'
                          .format(f.__name__, args, kwargs))
+        return result
     return wrap
 
 
