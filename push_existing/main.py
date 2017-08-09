@@ -155,12 +155,12 @@ class PushCards(QDialog):
             with open(NEW_PATH + r'\push_existing.json', 'r') as fh:
                 conf = json.load(fh)
 
-            self.selected_model = conf['default_model']
+            self.selected_model = conf.get('default_model')
             self._models_combo.setCurrentIndex(self._models_combo.findText(self.selected_model))
 
             if self.selected_model:
                 self._on_models_combo_index_changed()
-                self.field_to_match = conf['default_field_to_match']
+                self.field_to_match = conf.get('default_field_to_match')
                 self._fields_combo.setCurrentIndex(self._fields_combo.findText(self.field_to_match))
 
                 if self.field_to_match:
@@ -411,6 +411,7 @@ class PushCards(QDialog):
         except IndexError:
             # when nids is an empty list
             if sender == self._models_combo:
+                # only shown when the user himself changes the index of _models_combo
                 showInfo('No Notes found for that Model\n Please select another one')
             return
 
