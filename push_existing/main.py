@@ -29,7 +29,7 @@ except (AttributeError, ImportError):
         return s
 
 __version__ = '0.0'
-# Aug 1 2017
+# Aug 11 2017
 
 HOTKEY = 'Shift+P'
 TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
@@ -55,13 +55,13 @@ unmatched_logger = setup_logger('unmatched_logger', UNMATCHED_LOG_PATH, _format=
 
 del addon_mgr_instance
 
-DELIMITER_DICT = {'New Line':                       '\n',
-                  'Tab':                            '\t',
-                  'One Whitespace':                 ' ',
-                  '", "(Comma then space)':         ', ',
-                  '","(Comma without space)':       ',',
+DELIMITER_DICT = {'New Line'                    :   '\n',
+                  'Tab'                         :   '\t',
+                  'One Whitespace'              :   ' ',
+                  '", "(Comma then space)'      :   ', ',
+                  '","(Comma without space)'    :   ',',
                   '";"(Semicolon without space)':   ';',
-                  '"; "(Semicolon with space)':     '; '
+                  '"; "(Semicolon with space)'  :   '; '
                   }
 
 
@@ -778,18 +778,18 @@ class PushCards(QDialog):
 
 
     def __repr__(self):
-        return 'PushCards(matched vocab = {},' \
-               'list_of_vocabs_from_csv = {},' \
-               'unmatched_vocab = {},' \
-               'matched_but_not_rescheduled = {},' \
-               'selected_deck = {},' \
-               'selected_model = {}, ' \
-               'field_to_match = {},' \
-               'number_of_cards_to_resched_per_note = {},' \
-               'delimiter = {},' \
-               'preferred_csv_directory = {},' \
-               'enable_add_note_tag = {},' \
-               'encoding = {},' \
+        return 'PushCards(matched vocab = {},'              \
+               'list_of_vocabs_from_csv = {},'              \
+               'unmatched_vocab = {},'                      \
+               'matched_but_not_rescheduled = {},'          \
+               'selected_deck = {},'                        \
+               'selected_model = {}, '                      \
+               'field_to_match = {},'                       \
+               'number_of_cards_to_resched_per_note = {},'  \
+               'delimiter = {},'                            \
+               'preferred_csv_directory = {},'              \
+               'enable_add_note_tag = {},'                  \
+               'encoding = {},'                             \
                'number_of_notes_in_deck = {})'.format(self.matched_vocab,
                                                       self.list_of_vocabs_from_csv,
                                                       self.unmatched_vocab,
