@@ -777,6 +777,39 @@ class PushCards(QDialog):
                           )
 
 
+    def __repr__(self):
+        return 'PushCards(matched vocab = {},' \
+               'list_of_vocabs_from_csv = {},' \
+               'unmatched_vocab = {},' \
+               'matched_but_not_rescheduled = {},' \
+               'selected_deck = {},' \
+               'selected_model = {}, ' \
+               'field_to_match = {},' \
+               'number_of_cards_to_resched_per_note = {},' \
+               'delimiter = {},' \
+               'preferred_csv_directory = {},' \
+               'enable_add_note_tag = {},' \
+               'encoding = {},' \
+               'number_of_notes_in_deck = {})'.format(self.matched_vocab,
+                                                      self.list_of_vocabs_from_csv,
+                                                      self.unmatched_vocab,
+                                                      self.matched_but_not_rescheduled,
+                                                      self.selected_deck,
+                                                      self.selected_model,
+                                                      self.field_to_match,
+                                                      self.number_of_cards_to_resched_per_note,
+                                                      self.delimiter,
+                                                      self.preferred_csv_directory,
+                                                      self.enable_add_note_tag,
+                                                      self.encoding,
+                                                      self.number_of_notes_in_deck
+                                                      )
+
+
+    def __str__(self):
+        return 'Just check the .json file'
+
+
 
 def init_window():
     mw.push_cards = PushCards(mw)
