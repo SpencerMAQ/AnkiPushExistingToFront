@@ -35,7 +35,7 @@ Simply Open an issue and I'll see if I can do it.
     HOTKEY = 'Shift+P'  
     TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
     
-4. `push_existing\push_existing.json` から、自分で設定を手動することができる。
+4. `push_existing\push_existing.json` から、自分で設定を変更することができます。
 
 
 ## 提案、バグ、要求  
