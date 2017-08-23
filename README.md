@@ -10,7 +10,7 @@ list of vocabs I've mined from different sources.
 ## How to Use  
 1. Clone/Download the repository from [here](https://github.com/SpencerMAQ/AnkiPushExistingToFront/tree/master)
 2. Copy `Push_Existing_Vocab.py` and `push_existing` into `~\Documents\Anki\addons\`
-3. You can customize some of the code inside `push_existing\main.py`    
+3. You can customize some of the code inside `push_existing\main.py` [here](/push_existing/main.py) 
 
 Basically, the only part that's user-friendly to edit is this part of the code:    　
 
@@ -21,6 +21,8 @@ Basically, the only part that's user-friendly to edit is this part of the code: 
 
 ## Suggestions, Bugs, Requests　
 Simply Open an issue and I'll see if I can do it.   
+
+## [License](LICENSE)
 
 ---
 
