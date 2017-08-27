@@ -8,7 +8,7 @@ My intention is to use this plugin to push existing cards from my deck (which co
 list of vocabs I've mined from different sources.
 
 ## How to Use  
-1. Clone/Download the repository from [here](https://github.com/SpencerMAQ/AnkiPushExistingToFront/tree/master)
+1. Clone/Download the repository from [here](https://github.com/SpencerMAQ/AnkiPushExistingToFront/archive/master.zip)
 2. Copy `Push_Existing_Vocab.py` and `push_existing` into `~\Documents\Anki\addons\`
 3. You can customize some of the code inside `push_existing\main.py` [here](/push_existing/main.py) 
 
