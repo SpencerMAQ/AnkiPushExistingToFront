@@ -13,10 +13,10 @@ list of vocabs I've mined from different sources.
 3. You can customize some of the code inside `push_existing\main.py` [here](/push_existing/main.py) 
 
 Basically, the only part that's user-friendly to edit is this part of the code:    　
-
-    HOTKEY = 'Shift+P'  
-    TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
-    
+```py
+HOTKEY = 'Shift+P'  
+TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
+```   
 4. You can manually set the settings of the plugin inside `push_existing\push_existing.json`  
 
 ## Suggestions, Bugs, Requests　
@@ -35,10 +35,10 @@ Simply Open an issue and I'll see if I can do it.
 3. `push_existing\main.py` から、いくつかのコードをカスタマイズことができる。  
 
 簡単に編集してコードはこれだけです：    
-
-    HOTKEY = 'Shift+P'  
-    TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
-    
+```py
+HOTKEY = 'Shift+P'  
+TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
+```
 4. `push_existing\push_existing.json` から、自分で設定を変更することができます。
 
 
