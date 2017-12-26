@@ -75,6 +75,8 @@ call_logger = setup_logger('call_logger', CALL_LOG_PATH)
 
 # I'm not sure but just in case the decorated function has a return value, return result ensures that
 # the value is passed?
+
+# note to self: if the function passed is an object, 'self' would be part of *args
 def trace_calls(f):
     @wraps(f)
     def wrap(*args, **kwargs):
