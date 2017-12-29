@@ -31,27 +31,28 @@ except (AttributeError, ImportError):
 __version__ = '0.0'
 # Aug 1 2017
 
-HOTKEY = 'Shift+P'
-TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
+HOTKEY              = 'Shift+P'
+TAG_TO_ADD          = 'Rescheduled_by_Push_Existing_Vocab'
 
 
 # ===================== DO NOT EDIT BEYOND THIS LINE ===================== #
-UNMATCHED_FORMAT = logging.Formatter('%(message)s')
+UNMATCHED_FORMAT    = logging.Formatter('%(message)s')
 
-addon_mgr_instance = AddonManager(mw)
-ADD_ON_PATH = addon_mgr_instance.addonsFolder()
-PUSH_EXISTING_PATH = ADD_ON_PATH + r'\push_existing'
+addon_mgr_instance  = AddonManager(mw)
+ADD_ON_PATH         = addon_mgr_instance.addonsFolder()
+PUSH_EXISTING_PATH  = ADD_ON_PATH + r'\push_existing'
 
 if not os.path.exists(PUSH_EXISTING_PATH):
     os.makedirs(PUSH_EXISTING_PATH)
-NEW_PATH = os.path.join(ADD_ON_PATH, 'push_existing')
+    
+NEW_PATH            = os.path.join(ADD_ON_PATH, 'push_existing')
 
-CONFIG_PATH = os.path.join(NEW_PATH, 'push_existing_config.json')   # doesn't work on json?? but works for log
-LOG_PATH = os.path.join(NEW_PATH, 'push_existing.log')
-UNMATCHED_LOG_PATH = os.path.join(NEW_PATH, 'unmatched_vocab.log')
+CONFIG_PATH         = os.path.join(NEW_PATH, 'push_existing_config.json')   # doesn't work on json?? but works for log
+LOG_PATH            = os.path.join(NEW_PATH, 'push_existing.log')
+UNMATCHED_LOG_PATH  = os.path.join(NEW_PATH, 'unmatched_vocab.log')
 
-main_logger = setup_logger('main_logger', LOG_PATH)
-unmatched_logger = setup_logger('unmatched_logger', UNMATCHED_LOG_PATH, _format=UNMATCHED_FORMAT)
+main_logger         = setup_logger('main_logger', LOG_PATH)
+unmatched_logger    = setup_logger('unmatched_logger', UNMATCHED_LOG_PATH, _format=UNMATCHED_FORMAT)
 
 del addon_mgr_instance
 
