@@ -19,7 +19,4 @@ TAG_TO_ADD = 'Rescheduled_by_Push_Existing_Vocab'
 ```    
 4. You can manually set the settings of the plugin inside `push_existing\push_existing.json`  
 
-## Suggestions, Bugs, Requests　
-Simply Open an issue and I'll see if I can do it.   
-
 ## [License](LICENSE)
